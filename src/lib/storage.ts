@@ -1,20 +1,37 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import path from "path";
 
-const UPLOAD_DIR = path.join(process.cwd(), "storage", "uploads");
+const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "documents";
+
+function supabaseAdmin() {
+  const url = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRoleKey) {
+    throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY não configurados no .env");
+  }
+  return createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export async function saveUploadedFile(file: File) {
-  await mkdir(UPLOAD_DIR, { recursive: true });
-
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
   const ext = path.extname(file.name);
   const storedName = `${randomUUID()}${ext}`;
-  const fullPath = path.join(UPLOAD_DIR, storedName);
 
-  await writeFile(fullPath, buffer);
+  const { error } = await supabaseAdmin()
+    .storage.from(BUCKET)
+    .upload(storedName, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(`Falha ao carregar ficheiro para o Supabase Storage: ${error.message}`);
+  }
 
   return {
     filePath: storedName,
@@ -24,6 +41,11 @@ export async function saveUploadedFile(file: File) {
   };
 }
 
-export function resolveUploadPath(storedName: string) {
-  return path.join(UPLOAD_DIR, storedName);
+export async function downloadFile(storedName: string) {
+  const { data, error } = await supabaseAdmin().storage.from(BUCKET).download(storedName);
+  if (error || !data) {
+    throw new Error(`Falha ao obter ficheiro do Supabase Storage: ${error?.message ?? "não encontrado"}`);
+  }
+  const arrayBuffer = await data.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }

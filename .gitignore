@@ -12,14 +12,6 @@
 .env
 .env*.local
 
-# prisma
-/prisma/dev.db
-/prisma/dev.db-journal
-
-# uploaded files
-/storage/uploads/*
-!/storage/uploads/.gitkeep
-
 # misc
 .DS_Store
 *.pem
