@@ -5,14 +5,14 @@ histórico de decisões. Pensada para faturas, emails e outros documentos.
 
 ## Stack
 
-- [Next.js 14](https://nextjs.org/) (App Router) + TypeScript + Tailwind CSS
-- [Prisma](https://www.prisma.io/) + SQLite local (fácil migrar para PostgreSQL grátis — Neon/Supabase)
+- [Next.js 15](https://nextjs.org/) (App Router) + TypeScript + Tailwind CSS
+- [Prisma](https://www.prisma.io/) + PostgreSQL grátis ([Supabase](https://supabase.com/))
 - [NextAuth.js](https://next-auth.js.org/) com login Google e Microsoft (Azure AD)
-- Ficheiros guardados localmente em `storage/uploads` (servidos apenas a utilizadores autenticados)
+- Ficheiros guardados no [Supabase Storage](https://supabase.com/storage) (bucket privado, só acessível via servidor autenticado)
+- Deploy grátis na [Vercel](https://vercel.com/)
 
-Tudo o que é usado aqui tem camada gratuita (Google Cloud OAuth, Azure AD App
-registration e SQLite são grátis; para produção, Neon/Supabase Postgres têm
-plano gratuito).
+Tudo o que é usado aqui tem plano gratuito: Supabase (Postgres + Storage),
+Google Cloud OAuth, Azure AD App registration e Vercel.
 
 ## Modelo de dados
 
@@ -34,7 +34,38 @@ plano gratuito).
 4. Qualquer pessoa pode comentar em qualquer documento a qualquer momento.
 5. Tudo fica registado no histórico do documento.
 
-## Como correr localmente
+## 1. Criar o projeto Supabase (base de dados + storage)
+
+1. Cria uma conta grátis em https://supabase.com/ e um novo projeto.
+2. **Base de dados**: em *Project Settings → Database*, copia:
+   - a *Connection pooling string* (porta `6543`) → vai para `DATABASE_URL`
+   - a *Connection string* direta (porta `5432`) → vai para `DIRECT_URL`
+3. **Storage**: em *Storage*, cria um bucket **privado** chamado `documents`.
+4. **Chave de serviço**: em *Project Settings → API*, copia o `service_role`
+   secret → vai para `SUPABASE_SERVICE_ROLE_KEY`, e o *Project URL* → vai
+   para `SUPABASE_URL`.
+
+> A `service_role` key tem acesso total ao projeto — nunca a exponhas no
+> browser. Só é usada no servidor (rotas API), nunca em código do lado do
+> cliente.
+
+## 2. Configurar login (Google / Microsoft, grátis)
+
+**Google** — https://console.cloud.google.com/apis/credentials
+- Criar credenciais OAuth 2.0 (tipo "Aplicação Web")
+- Redirect URI local: `http://localhost:3000/api/auth/callback/google`
+- Redirect URI produção: `https://<o-teu-dominio>/api/auth/callback/google`
+- Copiar `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`
+
+**Microsoft** — https://portal.azure.com → App registrations → New registration
+- Redirect URI local: `http://localhost:3000/api/auth/callback/azure-ad`
+- Redirect URI produção: `https://<o-teu-dominio>/api/auth/callback/azure-ad`
+- "Accounts in any organizational directory and personal Microsoft accounts"
+- Copiar `AZURE_AD_CLIENT_ID`, criar um client secret em
+  "Certificates & secrets" e copiar `AZURE_AD_CLIENT_SECRET`.
+  `AZURE_AD_TENANT_ID` pode ficar `common`.
+
+## 3. Correr localmente
 
 1. Instalar dependências:
 
@@ -42,7 +73,8 @@ plano gratuito).
    npm install
    ```
 
-2. Criar o ficheiro `.env` a partir do exemplo:
+2. Criar o `.env` a partir do exemplo e preencher com os valores do
+   Supabase e do(s) fornecedor(es) de login:
 
    ```bash
    cp .env.example .env
@@ -54,35 +86,40 @@ plano gratuito).
    openssl rand -base64 32
    ```
 
-4. Configurar pelo menos um fornecedor de login (grátis):
-
-   **Google** — https://console.cloud.google.com/apis/credentials
-   - Criar credenciais OAuth 2.0 (tipo "Aplicação Web")
-   - Redirect URI: `http://localhost:3000/api/auth/callback/google`
-   - Copiar `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` para o `.env`
-
-   **Microsoft** — https://portal.azure.com → App registrations → New registration
-   - Redirect URI: `http://localhost:3000/api/auth/callback/azure-ad`
-   - "Accounts in any organizational directory and personal Microsoft accounts"
-   - Copiar `AZURE_AD_CLIENT_ID`, criar um client secret em "Certificates & secrets"
-     e copiar `AZURE_AD_CLIENT_SECRET`. `AZURE_AD_TENANT_ID` pode ficar `common`.
-
-5. Criar a base de dados e aplicar o schema:
+4. Aplicar o schema à base de dados Supabase:
 
    ```bash
-   npx prisma migrate dev --name init
+   npm run db:push
    ```
 
-6. Arrancar o servidor:
+5. Arrancar o servidor:
 
    ```bash
    npm run dev
    ```
 
-7. Abrir http://localhost:3000 e entrar com Google/Microsoft. O primeiro
+6. Abrir http://localhost:3000 e entrar com Google/Microsoft. O primeiro
    utilizador torna-se ADMIN automaticamente — depois pode promover outros
    a `APPROVER` em `/admin/users` para poderem ser escolhidos como
    aprovadores.
+
+## 4. Deploy na Vercel (grátis)
+
+1. Cria uma conta em https://vercel.com/ e liga-a à tua conta GitHub.
+2. "Add New… → Project" e escolhe o repositório `gestaodocumental`.
+3. Em *Environment Variables*, adiciona todas as variáveis do `.env`
+   (`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`,
+   `NEXTAUTH_SECRET`, e as credenciais Google/Microsoft).
+4. Define `NEXTAUTH_URL` com o domínio final que a Vercel te der (ex:
+   `https://gestaodocumental.vercel.app`).
+5. Volta ao Google Cloud Console / Azure Portal e adiciona esse domínio
+   aos redirect URIs autorizados (ver secção 2).
+6. Deploy. O comando de build já corre `prisma generate && next build`
+   automaticamente (definido em `package.json`).
+7. Depois do primeiro deploy, corre `npm run db:push` uma vez a partir do
+   teu computador (com o `.env` a apontar para o Supabase de produção) para
+   criar as tabelas — ou faz isso antes do deploy, no passo 3 acima.
 
 ## Próximos passos sugeridos
 
@@ -91,8 +128,3 @@ plano gratuito).
   reencaminhamento, ou API do Gmail/Microsoft Graph) para criar documentos
   automaticamente a partir de anexos.
 - Múltiplos aprovadores em sequência (workflow com mais do que um passo).
-- Mudar `prisma/schema.prisma` para `provider = "postgresql"` e usar uma
-  base de dados gratuita (Neon, Supabase) quando for para produção.
-- Mudar o armazenamento de ficheiros para um serviço externo (ex: Supabase
-  Storage, grátis) se fizeres deploy num ambiente sem disco persistente
-  (como a Vercel).

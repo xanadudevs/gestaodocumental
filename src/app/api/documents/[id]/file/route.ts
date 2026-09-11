@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { readFile } from "fs/promises";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveUploadPath } from "@/lib/storage";
+import { downloadFile } from "@/lib/storage";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const document = await prisma.document.findUnique({ where: { id } });
   if (!document) return NextResponse.json({ error: "Documento não encontrado" }, { status: 404 });
 
-  const buffer = await readFile(resolveUploadPath(document.filePath));
+  const buffer = await downloadFile(document.filePath);
 
   return new NextResponse(buffer, {
     headers: {

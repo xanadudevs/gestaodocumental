@@ -3,16 +3,16 @@ generator client {
 }
 
 datasource db {
-  // SQLite para começar sem infraestrutura. Para produção com vários
-  // utilizadores em simultâneo, muda para "postgresql" e aponta
-  // DATABASE_URL para uma instância grátis (ex: Neon ou Supabase).
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  // PostgreSQL grátis (ex: Supabase). DATABASE_URL usa a ligação com
+  // pooling (porta 6543, boa para serverless/Vercel); DIRECT_URL usa a
+  // ligação direta (porta 5432), necessária para migrações.
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// SQLite não suporta enums nativos no Prisma, por isso os "enums" abaixo
-// são strings validadas na aplicação (ver src/lib/enums.ts). Ao migrar
-// para PostgreSQL podes converter estes campos para `enum` reais.
+// Os "enums" abaixo são strings validadas na aplicação (ver
+// src/lib/enums.ts) em vez de enums nativos do Prisma, para simplificar.
 
 model User {
   id            String    @id @default(cuid())
