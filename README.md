@@ -86,13 +86,16 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
    openssl rand -base64 32
    ```
 
-4. Aplicar o schema à base de dados Supabase:
+4. Aplicar o schema à base de dados Supabase (também corre sozinho a cada
+   `npm run build`, mas útil para desenvolvimento local):
 
    ```bash
    npm run db:push
    ```
 
-5. Criar a estrutura organizacional (Direções/Unidades):
+5. Criar a estrutura organizacional (Direções/Unidades) — em alternativa,
+   podes fazer isto mais tarde com um clique em `/admin/users` (ver secção
+   de deploy):
 
    ```bash
    npm run db:seed
@@ -126,12 +129,16 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
    `https://gestaodocumental.vercel.app`).
 5. Volta ao Google Cloud Console / Azure Portal e adiciona esse domínio
    aos redirect URIs autorizados (ver secção 2).
-6. Deploy. O comando de build já corre `prisma generate && next build`
-   automaticamente (definido em `package.json`).
-7. Depois do primeiro deploy, corre `npm run db:push` e depois `npm run
-   db:seed` uma vez a partir do teu computador (com o `.env` a apontar
-   para o Supabase de produção) para criar as tabelas e a estrutura
-   organizacional — ou faz isso antes do deploy, no passo 3 acima.
+6. Deploy. O comando de build já corre `prisma generate && prisma db push
+   && next build` automaticamente (definido em `package.json`) — o schema
+   da base de dados fica sempre sincronizado a cada deploy, sem precisares
+   de correr nada manualmente.
+7. Depois do primeiro deploy: entra na app, faz login (o primeiro
+   utilizador torna-se ADMIN), vai a `/admin/users` e clica em
+   **"Criar / atualizar estrutura organizacional"** — cria as
+   Direções/Unidades diretamente através da app, sem precisares de terminal
+   nem de partilhar credenciais com ninguém. É seguro clicar mais do que
+   uma vez (não duplica).
 
 ## Próximos passos sugeridos
 

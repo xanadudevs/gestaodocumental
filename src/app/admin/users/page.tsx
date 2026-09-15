@@ -6,6 +6,7 @@ import { canManageUsers } from "@/lib/permissions";
 import { getFlatUnits } from "@/lib/units";
 import RoleForm from "@/components/RoleForm";
 import UnitLevelForm from "@/components/UnitLevelForm";
+import SeedUnitsButton from "@/components/SeedUnitsButton";
 
 export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
@@ -24,6 +25,8 @@ export default async function AdminUsersPage() {
         Só ADMIN e APPROVER podem ser escolhidos como aprovadores de documentos. Unidade e Nível
         são só informação organizacional (não restringem quem pode aprovar).
       </p>
+
+      <SeedUnitsButton />
       <div className="overflow-x-auto rounded-md border bg-white">
         <table className="w-full text-sm">
           <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
