@@ -6,7 +6,7 @@ import DocumentStatusBadge from "@/components/DocumentStatusBadge";
 import DecisionForm from "@/components/DecisionForm";
 import SubmitForm from "@/components/SubmitForm";
 import CommentForm from "@/components/CommentForm";
-import { DOCUMENT_TYPE_LABELS, AUDIT_ACTION_LABELS, formatDate } from "@/lib/labels";
+import { DOCUMENT_TYPE_LABELS, AUDIT_ACTION_LABELS, formatDate, formatUserOrg } from "@/lib/labels";
 import { canDecideOn } from "@/lib/permissions";
 
 export default async function DocumentDetailPage({
@@ -21,8 +21,12 @@ export default async function DocumentDetailPage({
   const document = await prisma.document.findUnique({
     where: { id },
     include: {
-      uploadedBy: { select: { id: true, name: true, email: true } },
-      approver: { select: { id: true, name: true, email: true } },
+      uploadedBy: {
+        select: { id: true, name: true, email: true, level: true, unit: { select: { name: true } } },
+      },
+      approver: {
+        select: { id: true, name: true, email: true, level: true, unit: { select: { name: true } } },
+      },
       comments: {
         include: { author: { select: { name: true, email: true } } },
         orderBy: { createdAt: "asc" },
@@ -43,7 +47,7 @@ export default async function DocumentDetailPage({
     isOwner && (document.status === "DRAFT" || document.status === "REJECTED")
       ? await prisma.user.findMany({
           where: { role: { in: ["ADMIN", "APPROVER"] } },
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, level: true, unit: { select: { name: true } } },
           orderBy: { name: "asc" },
         })
       : [];
@@ -56,7 +60,9 @@ export default async function DocumentDetailPage({
             <h1 className="text-xl font-semibold">{document.title}</h1>
             <p className="mt-1 text-sm text-gray-500">
               {DOCUMENT_TYPE_LABELS[document.type] ?? document.type} · Carregado por{" "}
-              {document.uploadedBy.name ?? document.uploadedBy.email} em {formatDate(document.createdAt)}
+              {document.uploadedBy.name ?? document.uploadedBy.email}
+              {formatUserOrg(document.uploadedBy) && ` (${formatUserOrg(document.uploadedBy)})`} em{" "}
+              {formatDate(document.createdAt)}
             </p>
           </div>
           <DocumentStatusBadge status={document.status} />
@@ -67,6 +73,9 @@ export default async function DocumentDetailPage({
         {document.approver && (
           <p className="mb-1 text-sm text-gray-600">
             Aprovador: <span className="font-medium">{document.approver.name ?? document.approver.email}</span>
+            {formatUserOrg(document.approver) && (
+              <span className="text-gray-400"> ({formatUserOrg(document.approver)})</span>
+            )}
           </p>
         )}
         {document.decisionReason && (

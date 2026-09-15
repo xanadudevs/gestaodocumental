@@ -21,7 +21,11 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("USER") // Role: ADMIN | APPROVER | USER
+  level         String? // Level: TECNICO | GESTAO | COORDENACAO | DIRECAO | CONSELHO
   createdAt     DateTime  @default(now())
+
+  unit   Unit?   @relation(fields: [unitId], references: [id])
+  unitId String?
 
   accounts Account[]
   sessions Session[]
@@ -30,6 +34,21 @@ model User {
   approvalsAssigned  Document[] @relation("AssignedApprover")
   comments           Comment[]
   auditLogs          AuditLog[]
+
+  @@index([unitId])
+}
+
+// Estrutura organizacional (Direções, Unidades, etc.), em árvore.
+model Unit {
+  id       String  @id @default(cuid())
+  name     String
+  order    Int     @default(0)
+  parent   Unit?   @relation("UnitHierarchy", fields: [parentId], references: [id])
+  parentId String?
+  children Unit[]  @relation("UnitHierarchy")
+  users    User[]
+
+  @@index([parentId])
 }
 
 model Document {

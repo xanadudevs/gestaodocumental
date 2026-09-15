@@ -92,16 +92,27 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
    npm run db:push
    ```
 
-5. Arrancar o servidor:
+5. Criar a estrutura organizacional (Direções/Unidades):
+
+   ```bash
+   npm run db:seed
+   ```
+
+6. Arrancar o servidor:
 
    ```bash
    npm run dev
    ```
 
-6. Abrir http://localhost:3000 e entrar com Google/Microsoft. O primeiro
-   utilizador torna-se ADMIN automaticamente — depois pode promover outros
-   a `APPROVER` em `/admin/users` para poderem ser escolhidos como
-   aprovadores.
+7. Abrir http://localhost:3000 e entrar com Google/Microsoft. O primeiro
+   utilizador torna-se ADMIN automaticamente — depois pode, em
+   `/admin/users`:
+   - promover outros a `APPROVER` (só ADMIN e APPROVER podem ser
+     escolhidos como aprovadores de documentos)
+   - atribuir a cada pessoa uma Unidade/Direção e um Nível (Técnico,
+     Gestão, Coordenação, Direção, Conselho) — é só informação
+     organizacional, mostrada ao escolher um aprovador; não restringe quem
+     pode aprovar (a escolha do aprovador continua livre)
 
 ## 4. Deploy na Vercel (grátis)
 
@@ -117,9 +128,10 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
    aos redirect URIs autorizados (ver secção 2).
 6. Deploy. O comando de build já corre `prisma generate && next build`
    automaticamente (definido em `package.json`).
-7. Depois do primeiro deploy, corre `npm run db:push` uma vez a partir do
-   teu computador (com o `.env` a apontar para o Supabase de produção) para
-   criar as tabelas — ou faz isso antes do deploy, no passo 3 acima.
+7. Depois do primeiro deploy, corre `npm run db:push` e depois `npm run
+   db:seed` uma vez a partir do teu computador (com o `.env` a apontar
+   para o Supabase de produção) para criar as tabelas e a estrutura
+   organizacional — ou faz isso antes do deploy, no passo 3 acima.
 
 ## Próximos passos sugeridos
 
