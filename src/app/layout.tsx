@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   description: "Gestão documental com fluxo de aprovação, rejeição e comentários",
 };
 
+// Toda a app depende de sessão de utilizador (NextAuth/Prisma), por isso
+// nunca deve ser pré-renderizada estaticamente em build - isso evita que o
+// Next.js tente gerar a página /_not-found em build time sem pedido real
+// (e sem variáveis de ambiente de runtime disponíveis).
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt">
