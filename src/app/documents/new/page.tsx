@@ -10,7 +10,7 @@ export default async function NewDocumentPage() {
 
   const approvers = await prisma.user.findMany({
     where: { role: { in: ["ADMIN", "APPROVER"] } },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, level: true, unit: { select: { name: true } } },
     orderBy: { name: "asc" },
   });
 

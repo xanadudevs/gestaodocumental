@@ -2,8 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { formatUserOrg } from "@/lib/labels";
 
-type Approver = { id: string; name: string | null; email: string | null };
+type Approver = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  level?: string | null;
+  unit?: { name: string } | null;
+};
 
 export default function UploadForm({ approvers }: { approvers: Approver[] }) {
   const router = useRouter();
@@ -74,11 +81,15 @@ export default function UploadForm({ approvers }: { approvers: Approver[] }) {
         <label className="mb-1 block text-sm font-medium">Submeter já para aprovação (opcional)</label>
         <select name="approverId" className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
           <option value="">Guardar como rascunho</option>
-          {approvers.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name ?? a.email}
-            </option>
-          ))}
+          {approvers.map((a) => {
+            const org = formatUserOrg({ unit: a.unit, level: a.level });
+            return (
+              <option key={a.id} value={a.id}>
+                {a.name ?? a.email}
+                {org && ` — ${org}`}
+              </option>
+            );
+          })}
         </select>
       </div>
 
