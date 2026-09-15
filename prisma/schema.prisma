@@ -20,6 +20,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  username      String?   @unique // login local por username/password (alternativa ao OAuth)
+  passwordHash  String? // bcrypt - nunca guardar em texto simples
   role          String    @default("USER") // Role: ADMIN | APPROVER | USER
   level         String? // Level: TECNICO | GESTAO | COORDENACAO | DIRECAO | CONSELHO
   createdAt     DateTime  @default(now())
