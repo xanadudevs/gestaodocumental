@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import SignInButtons from "@/components/SignInButtons";
+import CredentialsSignInForm from "@/components/CredentialsSignInForm";
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
@@ -16,6 +17,12 @@ export default async function LoginPage() {
         </p>
       </div>
       <SignInButtons />
+      <div className="flex w-64 items-center gap-2 text-xs text-gray-400">
+        <div className="h-px flex-1 bg-gray-200" />
+        ou
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+      <CredentialsSignInForm />
     </div>
   );
 }

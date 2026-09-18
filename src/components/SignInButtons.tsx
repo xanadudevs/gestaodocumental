@@ -14,15 +14,10 @@ export default function SignInButtons() {
     return <p className="text-sm text-gray-500">A carregar...</p>;
   }
 
-  const list = Object.values(providers);
+  const list = Object.values(providers).filter((p) => p.id !== "credentials");
 
   if (list.length === 0) {
-    return (
-      <p className="max-w-sm text-sm text-red-600">
-        Nenhum fornecedor de login configurado. Define GOOGLE_CLIENT_ID/SECRET ou
-        AZURE_AD_CLIENT_ID/SECRET no ficheiro .env.
-      </p>
-    );
+    return null;
   }
 
   return (

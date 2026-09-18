@@ -49,7 +49,35 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
 > browser. Só é usada no servidor (rotas API), nunca em código do lado do
 > cliente.
 
-## 2. Configurar login (Google / Microsoft, grátis)
+## 2. Configurar login
+
+Há duas formas de login, podes usar uma ou ambas:
+
+### Opção rápida: utilizador/password (sem OAuth)
+
+Útil para acesso imediato sem depender de contas Google/Microsoft. Define
+duas variáveis de ambiente (`.env` local ou Vercel → Environment Variables):
+
+```bash
+BOOTSTRAP_USERNAME="o-username-que-quiseres"
+BOOTSTRAP_PASSWORD_HASH="<hash gerado abaixo>"
+```
+
+Gera o hash da password (nunca guardes a password em texto simples):
+
+```bash
+node -e "console.log(require('bcryptjs').hashSync('A_TUA_PASSWORD', 10))"
+```
+
+> Num ficheiro `.env` **local**, escapa cada `$` do hash como `\$` (o
+> carregador de env do Next.js tenta expandi-los como variáveis), ex:
+> `BOOTSTRAP_PASSWORD_HASH="\$2b\$10\$abcd..."`. Na Vercel, cola o hash tal
+> como o comando o gerou, sem escapar nada — lá não há esse problema.
+
+Na primeira vez que fizeres login com esse utilizador/password na página
+`/login`, a conta é criada automaticamente como `ADMIN`.
+
+### Google / Microsoft (OAuth, grátis)
 
 **Google** — https://console.cloud.google.com/apis/credentials
 - Criar credenciais OAuth 2.0 (tipo "Aplicação Web")
@@ -86,13 +114,16 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
    openssl rand -base64 32
    ```
 
-4. Aplicar o schema à base de dados Supabase:
+4. Aplicar o schema à base de dados Supabase (também corre sozinho a cada
+   `npm run build`, mas útil para desenvolvimento local):
 
    ```bash
    npm run db:push
    ```
 
-5. Criar a estrutura organizacional (Direções/Unidades):
+5. Criar a estrutura organizacional (Direções/Unidades) — em alternativa,
+   podes fazer isto mais tarde com um clique em `/admin/users` (ver secção
+   de deploy):
 
    ```bash
    npm run db:seed
@@ -121,17 +152,23 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
 3. Em *Environment Variables*, adiciona todas as variáveis do `.env`
    (`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`,
    `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`,
-   `NEXTAUTH_SECRET`, e as credenciais Google/Microsoft).
+   `NEXTAUTH_SECRET`, `BOOTSTRAP_USERNAME`/`BOOTSTRAP_PASSWORD_HASH` se
+   quiseres o login por password, e as credenciais Google/Microsoft se
+   as tiveres).
 4. Define `NEXTAUTH_URL` com o domínio final que a Vercel te der (ex:
    `https://gestaodocumental.vercel.app`).
 5. Volta ao Google Cloud Console / Azure Portal e adiciona esse domínio
    aos redirect URIs autorizados (ver secção 2).
-6. Deploy. O comando de build já corre `prisma generate && next build`
-   automaticamente (definido em `package.json`).
-7. Depois do primeiro deploy, corre `npm run db:push` e depois `npm run
-   db:seed` uma vez a partir do teu computador (com o `.env` a apontar
-   para o Supabase de produção) para criar as tabelas e a estrutura
-   organizacional — ou faz isso antes do deploy, no passo 3 acima.
+6. Deploy. O comando de build já corre `prisma generate && prisma db push
+   && next build` automaticamente (definido em `package.json`) — o schema
+   da base de dados fica sempre sincronizado a cada deploy, sem precisares
+   de correr nada manualmente.
+7. Depois do primeiro deploy: entra na app, faz login (o primeiro
+   utilizador torna-se ADMIN), vai a `/admin/users` e clica em
+   **"Criar / atualizar estrutura organizacional"** — cria as
+   Direções/Unidades diretamente através da app, sem precisares de terminal
+   nem de partilhar credenciais com ninguém. É seguro clicar mais do que
+   uma vez (não duplica).
 
 ## Próximos passos sugeridos
 
