@@ -89,6 +89,16 @@ node -e "console.log(require('bcryptjs').hashSync('A_TUA_PASSWORD', 10))"
 Na primeira vez que fizeres login com esse utilizador/password na página
 `/login`, a conta é criada automaticamente como `ADMIN`.
 
+Esta conta serve também de **acesso de emergência**: entrar com a
+password das variáveis de ambiente funciona sempre e volta a pôr essa
+password e a role `ADMIN` na conta. Se ficares sem acesso, gera um novo
+hash, muda `BOOTSTRAP_PASSWORD_HASH` na Vercel e faz **Redeploy**.
+
+Se o login falhar com "erro no servidor ou na base de dados", abre
+`/api/health`: mostra se a app consegue falar com a base de dados e se a
+configuração principal está certa (porta da `DATABASE_URL`, `pgbouncer`,
+`NEXTAUTH_URL`, etc. — sem segredos).
+
 ### Google / Microsoft (OAuth, grátis)
 
 **Google** — https://console.cloud.google.com/apis/credentials

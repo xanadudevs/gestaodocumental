@@ -19,7 +19,12 @@ export default function CredentialsSignInForm() {
       redirect: false,
     });
     if (res?.error) {
-      setError("Utilizador ou password incorretos.");
+      // "ServerError" = LOGIN_SERVER_ERROR em src/lib/auth.ts
+      setError(
+        res.error === "ServerError"
+          ? "Não foi possível verificar o login (erro no servidor ou na base de dados). Tenta daqui a pouco; se continuar, abre /api/health."
+          : "Utilizador ou password incorretos.",
+      );
       setSubmitting(false);
       return;
     }
@@ -30,7 +35,7 @@ export default function CredentialsSignInForm() {
     <form onSubmit={handleSubmit} className="flex w-64 flex-col gap-2">
       <input
         type="text"
-        placeholder="Utilizador"
+        placeholder="Utilizador ou email"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         autoComplete="username"
