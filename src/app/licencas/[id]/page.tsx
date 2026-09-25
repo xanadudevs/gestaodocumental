@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LicenseStatusBadge from "@/components/LicenseStatusBadge";
 import LicenseActions from "@/components/LicenseActions";
+import CopyLinkButton from "@/components/CopyLinkButton";
 import { LICENSE_ACTION_LABELS, LICENSE_TYPE_LABELS, formatDate } from "@/lib/labels";
 import { canDecideOnLicense, canManageLicenses } from "@/lib/permissions";
 import { ACTIVE_LICENSE_STATUSES, countActiveLicenses, getLicenseProduct, productName } from "@/lib/licenses";
@@ -90,6 +91,16 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
           </p>
         )}
       </div>
+
+      {request.status === LicenseStatus.PENDING && !canDecide && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p>
+            A aguardar aprovação de <strong>{request.coordinator.name ?? request.coordinator.email}</strong>. O pedido
+            aparece-lhe em Licenças → Para eu aprovar; se quiseres, envia-lhe esta ligação (Teams, email…).
+          </p>
+          <CopyLinkButton />
+        </div>
+      )}
 
       {(canDecide || canGrant || canRevoke) && (
         <LicenseActions requestId={request.id} canDecide={canDecide} canGrant={canGrant} canRevoke={canRevoke} />

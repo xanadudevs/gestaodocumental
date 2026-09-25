@@ -33,7 +33,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
   }
   if (scope === "grant") where.status = LicenseStatus.APPROVED;
 
-  const [requests, usage, pendingForMe, directions] = await Promise.all([
+  const [requests, usage, pendingForMe, toGrant, directions] = await Promise.all([
     prisma.licenseRequest.findMany({
       where,
       include: {
@@ -47,6 +47,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
     prisma.licenseRequest.count({
       where: { status: LicenseStatus.PENDING, coordinatorId: session.user.id },
     }),
+    isSupport ? prisma.licenseRequest.count({ where: { status: LicenseStatus.APPROVED } }) : 0,
     prisma.unit.findMany({
       where: { licenseRequestsDirection: { some: {} } },
       select: { id: true, name: true },
@@ -60,7 +61,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
     ...(pendingForMe > 0 || session.user.role === Role.ADMIN
       ? [{ key: "decide", label: `Para eu aprovar${pendingForMe ? ` (${pendingForMe})` : ""}` }]
       : []),
-    ...(isSupport ? [{ key: "grant", label: "Para dar acesso" }] : []),
+    ...(isSupport ? [{ key: "grant", label: `Para dar acesso${toGrant ? ` (${toGrant})` : ""}` }] : []),
   ];
 
   const typeFilters = [

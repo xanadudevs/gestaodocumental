@@ -33,8 +33,8 @@ export default async function NewLicenseRequestPage() {
     <div>
       <h1 className="mb-1 text-xl font-semibold">Pedir licença</h1>
       <p className="mb-5 text-sm text-gray-500">
-        O pedido segue por email para o coordenador indicado, que o aprova aqui na aplicação. Depois de
-        aprovado, o Apoio Administrativo é notificado para dar o acesso.
+        O coordenador indicado aprova o pedido aqui na aplicação (em Licenças → Para eu aprovar). Depois de
+        aprovado, o pedido passa para o Apoio Administrativo, que dá o acesso.
       </p>
       {coordinations.length === 0 ? (
         <p className="rounded-md border border-dashed p-8 text-center text-sm text-gray-500">

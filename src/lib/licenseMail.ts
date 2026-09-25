@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { appUrl, escapeHtml, sendMail, type MailMessage } from "@/lib/mail";
+import { appUrl, escapeHtml, mailEnabled, sendMail, type MailMessage } from "@/lib/mail";
 import { productName } from "@/lib/licenses";
 import { LICENSE_TYPE_LABELS } from "@/lib/labels";
 import { LicenseAction } from "@/lib/enums";
@@ -133,6 +133,8 @@ export async function notify(
   message: MailMessage | null,
   missingRecipient?: string
 ) {
+  // Envio de email desligado: não há nada a enviar nem a registar.
+  if (!mailEnabled()) return;
   if (!message) {
     if (missingRecipient) {
       await prisma.licenseEvent.create({

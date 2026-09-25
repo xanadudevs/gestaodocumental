@@ -178,18 +178,19 @@ Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
 1. Qualquer pessoa preenche **Pedir licença**: tipo (Full/View), nome e
    email profissional do beneficiário, função, superior hierárquico,
    coordenação, coordenador que aprova, projeto e justificação.
-2. O coordenador recebe um **email** com a ligação e aprova ou rejeita
-   (motivo obrigatório) **na própria aplicação**.
+2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
+   contador no menu) e aprova ou rejeita (motivo obrigatório) **na
+   própria aplicação**. Quem pediu pode copiar a ligação do pedido para a
+   enviar ao coordenador (Teams, etc.).
 3. Ao aprovar, o sistema valida o **máximo de 22 licenças por Direção**
    (contam as licenças aprovadas e as já atribuídas, Full e View). A
    validação corre numa transação serializável, por isso duas aprovações
    em simultâneo nunca ultrapassam o limite. Também não deixa submeter
    pedidos novos com a Direção cheia, nem dois pedidos em curso para o
    mesmo email.
-4. Depois de aprovado, segue **email para o Apoio Administrativo**
-   (`LICENSE_SUPPORT_EMAIL`), com o beneficiário em cópia. O Apoio
-   Administrativo dá o acesso e carrega em **"Acesso dado"** (o
-   beneficiário é avisado por email).
+4. Depois de aprovado, o pedido aparece ao **Apoio Administrativo** em
+   **Licenças → Para dar acesso** (também com contador no menu), que dá o
+   acesso e carrega em **"Acesso dado"**.
 5. Quando a licença deixa de ser precisa, o Apoio Administrativo carrega
    em **"Libertar licença"**, que liberta o lugar na Direção.
 
@@ -202,9 +203,12 @@ Configuração:
   Administrativo e marca os coordenadores com o nível **Coordenação** (e
   a respetiva Unidade) — aparecem primeiro na lista de coordenadores do
   formulário. O coordenador tem de ter conta na app para aprovar.
-- Configura o envio de email e `LICENSE_SUPPORT_EMAIL` (ver
-  `.env.example`). Se algum email falhar, fica registado no histórico do
-  pedido. Duas opções:
+- **Emails (opcional, desligado por omissão)** — a app funciona sem
+  emails, só com as notificações dentro da aplicação. Se um dia quiseres
+  emails (ao coordenador, ao Apoio Administrativo via
+  `LICENSE_SUPPORT_EMAIL` e ao beneficiário), basta configurar uma destas
+  opções (ver `.env.example`); falhas de envio ficam no histórico do
+  pedido:
   - **Office 365 (Microsoft Graph)** — em https://portal.azure.com →
     *App registrations → New registration* (só contas desta
     organização); em *API permissions* adiciona *Microsoft Graph →

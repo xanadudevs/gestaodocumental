@@ -217,7 +217,7 @@ export default function LicenseRequestForm({
               )}
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Recebe um email e aprova o pedido nesta aplicação.
+              Tem de ter conta nesta aplicação - é aqui que aprova o pedido.
             </p>
           </div>
         </div>

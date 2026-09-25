@@ -91,6 +91,12 @@ async function sendWithGraph(cfg: NonNullable<ReturnType<typeof graphConfig>>, m
   }
 }
 
+// Há algum envio de email configurado? Sem nenhum, a app funciona só com
+// as notificações dentro da aplicação.
+export function mailEnabled() {
+  return graphConfig() !== null || !!process.env.SMTP_HOST;
+}
+
 // Devolve true se o email foi enviado, false se não há envio de email
 // configurado. Lança erro se o envio falhar.
 export async function sendMail(message: MailMessage): Promise<boolean> {
