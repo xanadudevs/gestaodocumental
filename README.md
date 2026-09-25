@@ -148,8 +148,10 @@ Na primeira vez que fizeres login com esse utilizador/password na página
    - criar utilizadores com **"+ Novo utilizador"** (nome, email, utilizador,
      password inicial, role, unidade e nível). Entram na página de login
      com o utilizador **ou** o email; cada pessoa pode mudar a password em
-     "A minha conta" (clicar no nome, no topo) e um ADMIN pode repô-la
-     com "Repor password"
+     "A minha conta" (clicar no nome, no topo)
+   - **"Editar"** qualquer utilizador: nome, email, utilizador e nova
+     password (também serve para dar login por password a quem só entrava
+     por Google/Microsoft)
    - promover outros a `APPROVER` (só ADMIN e APPROVER podem ser
      escolhidos como aprovadores de documentos)
    - atribuir a cada pessoa uma Unidade/Direção e um Nível (Técnico,

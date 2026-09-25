@@ -5,21 +5,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageUsers } from "@/lib/permissions";
 import { Level, Role } from "@/lib/enums";
-import { MIN_PASSWORD_LENGTH, hashPassword } from "@/lib/passwords";
-
-// Campos opcionais do formulário chegam como "" quando vazios.
-const optional = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), schema.optional());
+import { hashPassword } from "@/lib/passwords";
+import { emailSchema, nameSchema, optional, passwordSchema, usernameSchema } from "@/lib/userSchema";
 
 const schema = z.object({
-  name: z.string().trim().min(1, "Nome em falta"),
-  email: optional(z.string().trim().toLowerCase().email("Email inválido")),
-  username: z
-    .string()
-    .trim()
-    .min(3, "O utilizador tem de ter pelo menos 3 caracteres")
-    .regex(/^[a-zA-Z0-9._-]+$/, "O utilizador só pode ter letras, números, pontos, hífens e _"),
-  password: z.string().min(MIN_PASSWORD_LENGTH, `A password tem de ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`),
+  name: nameSchema,
+  email: optional(emailSchema),
+  username: usernameSchema,
+  password: passwordSchema,
   role: z.nativeEnum(Role),
   unitId: optional(z.string()),
   level: optional(z.nativeEnum(Level)),
