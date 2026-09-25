@@ -22,7 +22,7 @@ model User {
   image         String?
   username      String?   @unique // login local por username/password (alternativa ao OAuth)
   passwordHash  String? // bcrypt - nunca guardar em texto simples
-  role          String    @default("USER") // Role: ADMIN | APPROVER | USER
+  role          String    @default("USER") // Role: ADMIN | APPROVER | SUPPORT | USER
   level         String? // Level: TECNICO | GESTAO | COORDENACAO | DIRECAO | CONSELHO
   createdAt     DateTime  @default(now())
 
@@ -32,10 +32,14 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  uploadedDocuments  Document[] @relation("UploadedBy")
-  approvalsAssigned  Document[] @relation("AssignedApprover")
-  comments           Comment[]
-  auditLogs          AuditLog[]
+  uploadedDocuments Document[] @relation("UploadedBy")
+  approvalsAssigned Document[] @relation("AssignedApprover")
+  comments          Comment[]
+  auditLogs         AuditLog[]
+
+  licenseRequestsMade     LicenseRequest[] @relation("LicenseRequestedBy")
+  licenseRequestsToDecide LicenseRequest[] @relation("LicenseCoordinator")
+  licenseEvents           LicenseEvent[]
 
   @@index([unitId])
 }
@@ -50,15 +54,18 @@ model Unit {
   children Unit[]  @relation("UnitHierarchy")
   users    User[]
 
+  licenseRequestsCoordination LicenseRequest[] @relation("LicenseCoordination")
+  licenseRequestsDirection    LicenseRequest[] @relation("LicenseDirection")
+
   @@index([parentId])
 }
 
 model Document {
-  id             String         @id @default(cuid())
-  title          String
-  description    String?
-  type           String         @default("OTHER") // DocumentType: INVOICE | EMAIL | CONTRACT | OTHER
-  status         String         @default("DRAFT")  // DocumentStatus: DRAFT | PENDING | APPROVED | REJECTED
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  type        String  @default("OTHER") // DocumentType: INVOICE | EMAIL | CONTRACT | OTHER
+  status      String  @default("DRAFT") // DocumentStatus: DRAFT | PENDING | APPROVED | REJECTED
 
   fileName String
   filePath String
@@ -87,9 +94,9 @@ model Document {
 }
 
 model Comment {
-  id         String   @id @default(cuid())
-  body       String
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
 
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentId String
@@ -113,6 +120,71 @@ model AuditLog {
   actorId String
 
   @@index([documentId])
+}
+
+// --- Licenciamento (pedidos de licenças de software, ex: Figma) ---
+
+// Um pedido de licença para um beneficiário. Fluxo:
+// PENDING (aguarda coordenador) -> APPROVED (aguarda Apoio Administrativo)
+// -> GRANTED (acesso dado) -> REVOKED (licença libertada).
+// PENDING -> REJECTED se o coordenador rejeitar.
+model LicenseRequest {
+  id          String @id @default(cuid())
+  product     String // LicenseProduct: FIGMA
+  licenseType String // LicenseType: FULL | VIEW
+  status      String @default("PENDING") // LicenseStatus: PENDING | APPROVED | REJECTED | GRANTED | REVOKED
+
+  // Beneficiário (pode ser diferente de quem fez o pedido)
+  beneficiaryName  String
+  beneficiaryEmail String // email profissional
+  jobTitle         String?
+  superiorName     String
+  superiorEmail    String
+  justification    String
+  project          String?
+
+  coordination   Unit   @relation("LicenseCoordination", fields: [coordinationId], references: [id])
+  coordinationId String
+  // Direção a que a licença conta para o limite (guardada no pedido para
+  // o histórico não mudar se o organigrama mudar)
+  direction      Unit   @relation("LicenseDirection", fields: [directionId], references: [id])
+  directionId    String
+
+  requestedBy   User   @relation("LicenseRequestedBy", fields: [requestedById], references: [id])
+  requestedById String
+
+  coordinator   User   @relation("LicenseCoordinator", fields: [coordinatorId], references: [id])
+  coordinatorId String
+
+  decisionReason String?
+  decidedAt      DateTime?
+  grantedAt      DateTime?
+  revokedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events LicenseEvent[]
+
+  @@index([status])
+  @@index([directionId, product])
+  @@index([coordinatorId])
+  @@index([beneficiaryEmail])
+}
+
+model LicenseEvent {
+  id        String   @id @default(cuid())
+  action    String // LicenseAction: REQUESTED | APPROVED | REJECTED | GRANTED | REVOKED | EMAIL_FAILED
+  meta      String?
+  createdAt DateTime @default(now())
+
+  request   LicenseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId String
+
+  actor   User   @relation(fields: [actorId], references: [id])
+  actorId String
+
+  @@index([requestId])
 }
 
 // --- Modelos padrão do NextAuth ---

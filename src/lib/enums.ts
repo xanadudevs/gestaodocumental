@@ -4,6 +4,9 @@
 export const Role = {
   ADMIN: "ADMIN",
   APPROVER: "APPROVER",
+  // Apoio Administrativo: recebe os pedidos de licença aprovados e marca
+  // o acesso como dado / licença como libertada.
+  SUPPORT: "SUPPORT",
   USER: "USER",
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
@@ -53,3 +56,28 @@ export const AuditAction = {
   REASSIGNED: "REASSIGNED",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
+
+export const LicenseType = {
+  FULL: "FULL",
+  VIEW: "VIEW",
+} as const;
+export type LicenseType = (typeof LicenseType)[keyof typeof LicenseType];
+
+export const LicenseStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+  GRANTED: "GRANTED",
+  REVOKED: "REVOKED",
+} as const;
+export type LicenseStatus = (typeof LicenseStatus)[keyof typeof LicenseStatus];
+
+export const LicenseAction = {
+  REQUESTED: "REQUESTED",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+  GRANTED: "GRANTED",
+  REVOKED: "REVOKED",
+  EMAIL_FAILED: "EMAIL_FAILED",
+} as const;
+export type LicenseAction = (typeof LicenseAction)[keyof typeof LicenseAction];

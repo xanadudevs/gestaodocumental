@@ -4,8 +4,8 @@ import { Providers } from "./providers";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Gestão Documental",
-  description: "Gestão documental com fluxo de aprovação, rejeição e comentários",
+  title: "Gestão e Suporte DANAD",
+  description: "Gestão documental e pedidos de licenças com fluxo de aprovação",
 };
 
 // Toda a app depende de sessão de utilizador (NextAuth/Prisma), por isso

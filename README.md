@@ -1,7 +1,14 @@
-# Gestão Documental
+# Gestão e Suporte DANAD
 
-Aplicação de gestão documental com fluxo de aprovação/rejeição, comentários e
-histórico de decisões. Pensada para faturas, emails e outros documentos.
+Aplicação de gestão e suporte da Direção de Arquitetura, Negócio e Análise
+de Dados:
+
+- **Documentos** — gestão documental com fluxo de aprovação/rejeição,
+  comentários e histórico de decisões (faturas, emails e outros
+  documentos).
+- **Licenças** — pedidos de licenças de software (ex: Figma) com
+  aprovação do coordenador e limite por Direção (ver secção
+  [Licenças](#licenças-ex-figma)).
 
 ## Stack
 
@@ -170,9 +177,65 @@ Na primeira vez que fizeres login com esse utilizador/password na página
    nem de partilhar credenciais com ninguém. É seguro clicar mais do que
    uma vez (não duplica).
 
+## Licenças (ex: Figma)
+
+Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
+(Full ou View). Fluxo:
+
+1. Qualquer pessoa preenche **Pedir licença**: tipo (Full/View), nome e
+   email profissional do beneficiário, função, superior hierárquico,
+   coordenação, coordenador que aprova, projeto e justificação.
+2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
+   contador no menu) e aprova ou rejeita (motivo obrigatório) **na
+   própria aplicação**. Quem pediu pode copiar a ligação do pedido para a
+   enviar ao coordenador (Teams, etc.).
+3. Ao aprovar, o sistema valida o **máximo de 22 licenças por Direção**
+   (contam as licenças aprovadas e as já atribuídas, Full e View). A
+   validação corre numa transação serializável, por isso duas aprovações
+   em simultâneo nunca ultrapassam o limite. Também não deixa submeter
+   pedidos novos com a Direção cheia, nem dois pedidos em curso para o
+   mesmo email.
+4. Depois de aprovado, o pedido aparece ao **Apoio Administrativo** em
+   **Licenças → Para dar acesso** (também com contador no menu), que dá o
+   acesso e carrega em **"Acesso dado"**.
+5. Quando a licença deixa de ser precisa, o Apoio Administrativo carrega
+   em **"Libertar licença"**, que liberta o lugar na Direção.
+
+A página Licenças mostra as licenças de toda a gente, com filtros Full /
+View e por estado, e a ocupação de cada Direção (X / 22).
+
+Configuração:
+
+- Em `/admin/users`, dá a role **SUPPORT** às pessoas do Apoio
+  Administrativo e marca os coordenadores com o nível **Coordenação** (e
+  a respetiva Unidade) — aparecem primeiro na lista de coordenadores do
+  formulário. O coordenador tem de ter conta na app para aprovar.
+- **Emails (opcional, desligado por omissão)** — a app funciona sem
+  emails, só com as notificações dentro da aplicação. Se um dia quiseres
+  emails (ao coordenador, ao Apoio Administrativo via
+  `LICENSE_SUPPORT_EMAIL` e ao beneficiário), basta configurar uma destas
+  opções (ver `.env.example`); falhas de envio ficam no histórico do
+  pedido:
+  - **Office 365 (Microsoft Graph)** — em https://portal.azure.com →
+    *App registrations → New registration* (só contas desta
+    organização); em *API permissions* adiciona *Microsoft Graph →
+    Application permissions → Mail.Send* e pede a um administrador do
+    tenant para dar *Grant admin consent*; em *Certificates & secrets*
+    cria um client secret. Preenche `MS_GRAPH_TENANT_ID` (o *Directory
+    (tenant) ID*, não `common`), `MS_GRAPH_CLIENT_ID`,
+    `MS_GRAPH_CLIENT_SECRET` e `MS_GRAPH_SENDER` (a caixa que envia). Por
+    segurança, o administrador pode limitar a app a essa única caixa com
+    uma *Application Access Policy* do Exchange
+    (`New-ApplicationAccessPolicy -AccessRight RestrictAccess ...`).
+  - **SMTP** (Gmail com palavra-passe de aplicação, Brevo, …) — variáveis
+    `SMTP_*` e `MAIL_FROM`.
+- O limite, os tipos que contam e novos produtos configuram-se em
+  `src/lib/licenses.ts` (`LICENSE_PRODUCTS`).
+
 ## Próximos passos sugeridos
 
-- Notificações por email quando um documento é submetido/aprovado/rejeitado.
+- Notificações por email quando um documento é submetido/aprovado/rejeitado
+  (a infraestrutura de email já existe em `src/lib/mail.ts`).
 - Importação automática de emails (ex: caixa de correio dedicada + regra de
   reencaminhamento, ou API do Gmail/Microsoft Graph) para criar documentos
   automaticamente a partir de anexos.

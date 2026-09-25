@@ -11,9 +11,9 @@ export default async function LoginPage() {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-brand-700">Gestão Documental</h1>
+        <h1 className="text-2xl font-semibold text-brand-700">Gestão e Suporte DANAD</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Faturas, emails e documentos com fluxo de aprovação e comentários.
+          Documentos e pedidos de licenças com fluxo de aprovação.
         </p>
       </div>
       <SignInButtons />
