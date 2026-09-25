@@ -45,7 +45,12 @@ Google Cloud OAuth, Azure AD App registration e Vercel.
 
 1. Cria uma conta grátis em https://supabase.com/ e um novo projeto.
 2. **Base de dados**: em *Project Settings → Database*, copia:
-   - a *Connection pooling string* (porta `6543`) → vai para `DATABASE_URL`
+   - a *Connection pooling string* (porta `6543`, "transaction mode") → vai
+     para `DATABASE_URL`, acrescentando `?pgbouncer=true&connection_limit=1`.
+     Não uses a porta `5432` aqui: em "session mode" as funções da Vercel
+     esgotam as 15 ligações do Supabase e o build falha com
+     `EMAXCONNSESSION` (o build já repete o `db push` algumas vezes antes
+     de desistir)
    - a *Connection string* direta (porta `5432`) → vai para `DIRECT_URL`
 3. **Storage**: em *Storage*, cria um bucket **privado** chamado `documents`.
 4. **Chave de serviço**: em *Project Settings → API*, copia o `service_role`
@@ -148,8 +153,10 @@ Na primeira vez que fizeres login com esse utilizador/password na página
    - criar utilizadores com **"+ Novo utilizador"** (nome, email, utilizador,
      password inicial, role, unidade e nível). Entram na página de login
      com o utilizador **ou** o email; cada pessoa pode mudar a password em
-     "A minha conta" (clicar no nome, no topo) e um ADMIN pode repô-la
-     com "Repor password"
+     "A minha conta" (clicar no nome, no topo)
+   - **"Editar"** qualquer utilizador: nome, email, utilizador e nova
+     password (também serve para dar login por password a quem só entrava
+     por Google/Microsoft)
    - promover outros a `APPROVER` (só ADMIN e APPROVER podem ser
      escolhidos como aprovadores de documentos)
    - atribuir a cada pessoa uma Unidade/Direção e um Nível (Técnico,

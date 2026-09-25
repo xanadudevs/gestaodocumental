@@ -8,7 +8,7 @@ import RoleForm from "@/components/RoleForm";
 import UnitLevelForm from "@/components/UnitLevelForm";
 import SeedUnitsButton from "@/components/SeedUnitsButton";
 import CreateUserForm from "@/components/CreateUserForm";
-import ResetPasswordButton from "@/components/ResetPasswordButton";
+import EditUserButton from "@/components/EditUserButton";
 
 export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
@@ -44,14 +44,16 @@ export default async function AdminUsersPage() {
           <tbody className="divide-y">
             {users.map((u) => (
               <tr key={u.id}>
-                <td className="px-4 py-2 whitespace-nowrap">{u.name ?? "—"}</td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <p>{u.name ?? "—"}</p>
+                  <EditUserButton user={{ id: u.id, name: u.name, email: u.email, username: u.username }} />
+                </td>
                 <td className="px-4 py-2 whitespace-nowrap text-gray-500">
                   <p>{u.email ?? "—"}</p>
-                  {u.username && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span>@{u.username}</span>
-                      <ResetPasswordButton userId={u.id} name={u.name ?? u.username} />
-                    </div>
+                  {u.username ? (
+                    <p className="text-xs">@{u.username}</p>
+                  ) : (
+                    !u.passwordHash && <p className="text-xs text-gray-400">só Google/Microsoft</p>
                   )}
                 </td>
                 <td className="px-4 py-2">
