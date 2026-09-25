@@ -1,7 +1,14 @@
-# Gestão Documental
+# Gestão e Suporte DANAD
 
-Aplicação de gestão documental com fluxo de aprovação/rejeição, comentários e
-histórico de decisões. Pensada para faturas, emails e outros documentos.
+Aplicação de gestão e suporte da Direção de Arquitetura, Negócio e Análise
+de Dados:
+
+- **Documentos** — gestão documental com fluxo de aprovação/rejeição,
+  comentários e histórico de decisões (faturas, emails e outros
+  documentos).
+- **Licenças** — pedidos de licenças de software (ex: Figma) com
+  aprovação do coordenador e limite por Direção (ver secção
+  [Licenças](#licenças-ex-figma)).
 
 ## Stack
 

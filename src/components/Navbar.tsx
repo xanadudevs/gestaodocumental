@@ -26,7 +26,7 @@ export default async function Navbar() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="text-lg font-semibold text-brand-700">
-            Gestão Documental
+            Gestão e Suporte DANAD
           </Link>
           <nav className="flex gap-4 text-sm text-gray-600">
             <Link href="/dashboard" className="hover:text-brand-600">
