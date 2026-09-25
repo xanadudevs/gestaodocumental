@@ -50,7 +50,7 @@ export default function UnitLevelForm({
           setUnitId(e.target.value);
           save(e.target.value, level);
         }}
-        className="rounded-md border border-gray-300 px-2 py-1 text-sm disabled:opacity-60"
+        className="w-64 rounded-md border border-gray-300 px-2 py-1 text-sm disabled:opacity-60"
       >
         <option value="">Sem unidade</option>
         {units.map((u) => (

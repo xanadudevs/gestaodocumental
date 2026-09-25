@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ROLE_LABELS } from "@/lib/labels";
 
 const ROLES = ["USER", "APPROVER", "SUPPORT", "ADMIN"];
 
@@ -37,7 +38,7 @@ export default function RoleForm({ userId, currentRole }: { userId: string; curr
     >
       {ROLES.map((r) => (
         <option key={r} value={r}>
-          {r}
+          {ROLE_LABELS[r] ?? r}
         </option>
       ))}
     </select>

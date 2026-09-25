@@ -7,6 +7,8 @@ import { getFlatUnits } from "@/lib/units";
 import RoleForm from "@/components/RoleForm";
 import UnitLevelForm from "@/components/UnitLevelForm";
 import SeedUnitsButton from "@/components/SeedUnitsButton";
+import CreateUserForm from "@/components/CreateUserForm";
+import ResetPasswordButton from "@/components/ResetPasswordButton";
 
 export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
@@ -22,17 +24,19 @@ export default async function AdminUsersPage() {
     <div>
       <h1 className="mb-4 text-xl font-semibold">Utilizadores</h1>
       <p className="mb-4 text-sm text-gray-500">
-        Só ADMIN e APPROVER podem ser escolhidos como aprovadores de documentos. Unidade e Nível
-        são só informação organizacional (não restringem quem pode aprovar).
+        Só Administradores e Aprovadores podem ser escolhidos como aprovadores de documentos. Nas
+        licenças, aprova o coordenador indicado no pedido (convém ter nível Coordenação e a Unidade
+        certa), e o Gestor de Licenças dá o acesso.
       </p>
 
       <SeedUnitsButton />
+      <CreateUserForm units={units} />
       <div className="overflow-x-auto rounded-md border bg-white">
         <table className="w-full text-sm">
           <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
             <tr>
               <th className="px-4 py-2">Nome</th>
-              <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Email / Utilizador</th>
               <th className="px-4 py-2">Role</th>
               <th className="px-4 py-2">Unidade / Nível</th>
             </tr>
@@ -41,7 +45,15 @@ export default async function AdminUsersPage() {
             {users.map((u) => (
               <tr key={u.id}>
                 <td className="px-4 py-2 whitespace-nowrap">{u.name ?? "—"}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-gray-500">{u.email}</td>
+                <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                  <p>{u.email ?? "—"}</p>
+                  {u.username && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span>@{u.username}</span>
+                      <ResetPasswordButton userId={u.id} name={u.name ?? u.username} />
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <RoleForm userId={u.id} currentRole={u.role} />
                 </td>

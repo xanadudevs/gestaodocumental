@@ -4,8 +4,8 @@
 export const Role = {
   ADMIN: "ADMIN",
   APPROVER: "APPROVER",
-  // Apoio Administrativo: recebe os pedidos de licença aprovados e marca
-  // o acesso como dado / licença como libertada.
+  // Gestor de Licenças (Apoio Administrativo): recebe os pedidos de
+  // licença aprovados e marca o acesso como dado / licença como libertada.
   SUPPORT: "SUPPORT",
   USER: "USER",
 } as const;
