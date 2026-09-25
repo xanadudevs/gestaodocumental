@@ -14,7 +14,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    })
+    }),
   );
 }
 
@@ -24,20 +24,56 @@ if (process.env.AZURE_AD_CLIENT_ID && process.env.AZURE_AD_CLIENT_SECRET) {
       clientId: process.env.AZURE_AD_CLIENT_ID,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET,
       tenantId: process.env.AZURE_AD_TENANT_ID || "common",
-    })
+    }),
   );
 }
 
-// Conta de acesso inicial (bootstrap): permite entrar sem depender de OAuth
-// configurado. Na primeira vez que se faz login com este utilizador, a
-// conta é criada automaticamente como ADMIN - não é preciso terminal nem
-// passo manual na base de dados. As credenciais vêm sempre de variáveis
-// de ambiente (nunca de um valor no código) - define BOOTSTRAP_USERNAME e
-// BOOTSTRAP_PASSWORD_HASH (hash bcrypt, não a password em texto simples)
-// no .env / na Vercel. Sem estas variáveis definidas, este acesso fica
-// desativado.
+// Conta de acesso inicial (bootstrap) e de recuperação: define
+// BOOTSTRAP_USERNAME e BOOTSTRAP_PASSWORD_HASH (hash bcrypt, nunca a
+// password em texto simples) no .env / na Vercel. Na primeira vez que se
+// entra com ela, a conta é criada como ADMIN. Depois disso continua a
+// funcionar como acesso de emergência: entrar com a password das
+// variáveis de ambiente volta a pôr essa password e a role ADMIN na conta
+// - se ficares sem acesso, basta mudar a variável na Vercel e fazer
+// Redeploy. Sem estas variáveis definidas, este acesso fica desativado.
 const BOOTSTRAP_USERNAME = process.env.BOOTSTRAP_USERNAME;
 const BOOTSTRAP_PASSWORD_HASH = process.env.BOOTSTRAP_PASSWORD_HASH;
+
+// Erro devolvido ao formulário de login quando a falha não é de
+// credenciais (ex: base de dados inacessível).
+export const LOGIN_SERVER_ERROR = "ServerError";
+
+async function authorizeCredentials(login: string, password: string) {
+  if (
+    BOOTSTRAP_USERNAME &&
+    BOOTSTRAP_PASSWORD_HASH &&
+    login === BOOTSTRAP_USERNAME &&
+    (await bcrypt.compare(password, BOOTSTRAP_PASSWORD_HASH))
+  ) {
+    const user = await prisma.user.upsert({
+      where: { username: BOOTSTRAP_USERNAME },
+      update: { passwordHash: BOOTSTRAP_PASSWORD_HASH, role: Role.ADMIN },
+      create: {
+        username: BOOTSTRAP_USERNAME,
+        name: BOOTSTRAP_USERNAME,
+        passwordHash: BOOTSTRAP_PASSWORD_HASH,
+        role: Role.ADMIN,
+      },
+    });
+    return { id: user.id, name: user.name, email: user.email, role: user.role };
+  }
+
+  // Aceita o username ou o email do utilizador.
+  const user =
+    (await prisma.user.findUnique({ where: { username: login } })) ??
+    (await prisma.user.findUnique({ where: { email: login.toLowerCase() } }));
+  if (!user?.passwordHash) return null;
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return null;
+
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
+}
 
 // Login local por username/password - usado sobretudo para acesso inicial
 // sem depender de OAuth. Funciona para utilizadores com passwordHash
@@ -51,35 +87,16 @@ providers.push(
     },
     async authorize(credentials) {
       if (!credentials?.username || !credentials.password) return null;
-
-      // Aceita o username ou o email do utilizador.
-      const login = credentials.username.trim();
-      let user =
-        (await prisma.user.findUnique({ where: { username: login } })) ??
-        (await prisma.user.findUnique({ where: { email: login.toLowerCase() } }));
-
-      if (!user && BOOTSTRAP_USERNAME && BOOTSTRAP_PASSWORD_HASH && credentials.username === BOOTSTRAP_USERNAME) {
-        const matchesBootstrap = await bcrypt.compare(credentials.password, BOOTSTRAP_PASSWORD_HASH);
-        if (!matchesBootstrap) return null;
-        user = await prisma.user.create({
-          data: {
-            username: BOOTSTRAP_USERNAME,
-            name: BOOTSTRAP_USERNAME,
-            passwordHash: BOOTSTRAP_PASSWORD_HASH,
-            role: Role.ADMIN,
-          },
-        });
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+      try {
+        return await authorizeCredentials(credentials.username.trim(), credentials.password);
+      } catch (err) {
+        // Distingue "password errada" de "servidor/base de dados com
+        // problemas" - o detalhe fica só no log do servidor.
+        console.error("[auth] erro no login", err);
+        throw new Error(LOGIN_SERVER_ERROR);
       }
-
-      if (!user?.passwordHash) return null;
-
-      const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-      if (!valid) return null;
-
-      return { id: user.id, name: user.name, email: user.email, role: user.role };
     },
-  })
+  }),
 );
 
 export const authOptions: NextAuthOptions = {
