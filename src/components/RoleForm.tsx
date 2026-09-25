@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const ROLES = ["USER", "APPROVER", "ADMIN"];
+const ROLES = ["USER", "APPROVER", "SUPPORT", "ADMIN"];
 
 export default function RoleForm({ userId, currentRole }: { userId: string; currentRole: string }) {
   const router = useRouter();

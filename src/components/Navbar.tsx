@@ -22,6 +22,9 @@ export default async function Navbar() {
             <Link href="/documents/new" className="hover:text-brand-600">
               Novo documento
             </Link>
+            <Link href="/licencas" className="hover:text-brand-600">
+              Licenças
+            </Link>
             {canManageUsers(session.user.role) && (
               <Link href="/admin/users" className="hover:text-brand-600">
                 Utilizadores

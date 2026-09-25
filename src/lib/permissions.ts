@@ -13,3 +13,13 @@ export function canDecideOn(role: Role, approverId: string | null, userId: strin
   if (role === Role.APPROVER && approverId === userId) return true;
   return false;
 }
+
+// Apoio Administrativo (e ADMIN) dá o acesso depois da aprovação do
+// coordenador, e liberta licenças que deixam de ser precisas.
+export function canManageLicenses(role: Role) {
+  return role === Role.ADMIN || role === Role.SUPPORT;
+}
+
+export function canDecideOnLicense(role: Role, coordinatorId: string, userId: string) {
+  return role === Role.ADMIN || coordinatorId === userId;
+}

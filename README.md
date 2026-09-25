@@ -170,9 +170,48 @@ Na primeira vez que fizeres login com esse utilizador/password na página
    nem de partilhar credenciais com ninguém. É seguro clicar mais do que
    uma vez (não duplica).
 
+## Licenças (ex: Figma)
+
+Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
+(Full ou View). Fluxo:
+
+1. Qualquer pessoa preenche **Pedir licença**: tipo (Full/View), nome e
+   email profissional do beneficiário, função, superior hierárquico,
+   coordenação, coordenador que aprova, projeto e justificação.
+2. O coordenador recebe um **email** com a ligação e aprova ou rejeita
+   (motivo obrigatório) **na própria aplicação**.
+3. Ao aprovar, o sistema valida o **máximo de 22 licenças por Direção**
+   (contam as licenças aprovadas e as já atribuídas, Full e View). A
+   validação corre numa transação serializável, por isso duas aprovações
+   em simultâneo nunca ultrapassam o limite. Também não deixa submeter
+   pedidos novos com a Direção cheia, nem dois pedidos em curso para o
+   mesmo email.
+4. Depois de aprovado, segue **email para o Apoio Administrativo**
+   (`LICENSE_SUPPORT_EMAIL`), com o beneficiário em cópia. O Apoio
+   Administrativo dá o acesso e carrega em **"Acesso dado"** (o
+   beneficiário é avisado por email).
+5. Quando a licença deixa de ser precisa, o Apoio Administrativo carrega
+   em **"Libertar licença"**, que liberta o lugar na Direção.
+
+A página Licenças mostra as licenças de toda a gente, com filtros Full /
+View e por estado, e a ocupação de cada Direção (X / 22).
+
+Configuração:
+
+- Em `/admin/users`, dá a role **SUPPORT** às pessoas do Apoio
+  Administrativo e marca os coordenadores com o nível **Coordenação** (e
+  a respetiva Unidade) — aparecem primeiro na lista de coordenadores do
+  formulário. O coordenador tem de ter conta na app para aprovar.
+- Define as variáveis `SMTP_*`, `MAIL_FROM` e `LICENSE_SUPPORT_EMAIL`
+  (ver `.env.example`). Se algum email falhar, fica registado no histórico
+  do pedido.
+- O limite, os tipos que contam e novos produtos configuram-se em
+  `src/lib/licenses.ts` (`LICENSE_PRODUCTS`).
+
 ## Próximos passos sugeridos
 
-- Notificações por email quando um documento é submetido/aprovado/rejeitado.
+- Notificações por email quando um documento é submetido/aprovado/rejeitado
+  (a infraestrutura de email já existe em `src/lib/mail.ts`).
 - Importação automática de emails (ex: caixa de correio dedicada + regra de
   reencaminhamento, ou API do Gmail/Microsoft Graph) para criar documentos
   automaticamente a partir de anexos.

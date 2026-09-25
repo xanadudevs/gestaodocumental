@@ -38,3 +38,25 @@ export function formatDate(date: string | Date) {
     minute: "2-digit",
   });
 }
+
+export const LICENSE_TYPE_LABELS: Record<string, string> = {
+  FULL: "Full",
+  VIEW: "View",
+};
+
+export const LICENSE_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Aguarda coordenador",
+  APPROVED: "Aguarda atribuição",
+  REJECTED: "Rejeitado",
+  GRANTED: "Ativa",
+  REVOKED: "Libertada",
+};
+
+export const LICENSE_ACTION_LABELS: Record<string, string> = {
+  REQUESTED: "pediu a licença",
+  APPROVED: "aprovou o pedido",
+  REJECTED: "rejeitou o pedido",
+  GRANTED: "deu o acesso",
+  REVOKED: "libertou a licença",
+  EMAIL_FAILED: "— falhou o envio de email",
+};
