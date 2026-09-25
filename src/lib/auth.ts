@@ -46,15 +46,17 @@ providers.push(
   CredentialsProvider({
     name: "Utilizador e password",
     credentials: {
-      username: { label: "Utilizador", type: "text" },
+      username: { label: "Utilizador ou email", type: "text" },
       password: { label: "Password", type: "password" },
     },
     async authorize(credentials) {
       if (!credentials?.username || !credentials.password) return null;
 
-      let user = await prisma.user.findUnique({
-        where: { username: credentials.username },
-      });
+      // Aceita o username ou o email do utilizador.
+      const login = credentials.username.trim();
+      let user =
+        (await prisma.user.findUnique({ where: { username: login } })) ??
+        (await prisma.user.findUnique({ where: { email: login.toLowerCase() } }));
 
       if (!user && BOOTSTRAP_USERNAME && BOOTSTRAP_PASSWORD_HASH && credentials.username === BOOTSTRAP_USERNAME) {
         const matchesBootstrap = await bcrypt.compare(credentials.password, BOOTSTRAP_PASSWORD_HASH);

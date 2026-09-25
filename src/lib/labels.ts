@@ -39,6 +39,13 @@ export function formatDate(date: string | Date) {
   });
 }
 
+export const ROLE_LABELS: Record<string, string> = {
+  ADMIN: "Administrador",
+  APPROVER: "Aprovador",
+  SUPPORT: "Gestor de Licenças",
+  USER: "Utilizador",
+};
+
 export const LICENSE_TYPE_LABELS: Record<string, string> = {
   FULL: "Full",
   VIEW: "View",

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { canManageLicenses, canManageUsers } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { LicenseStatus } from "@/lib/enums";
+import { ROLE_LABELS } from "@/lib/labels";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function Navbar() {
@@ -54,12 +55,12 @@ export default async function Navbar() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">
+          <Link href="/conta" className="text-sm text-gray-500 hover:text-brand-600" title="A minha conta">
             {session.user.name ?? session.user.email}{" "}
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs uppercase text-gray-500">
-              {session.user.role}
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+              {ROLE_LABELS[session.user.role] ?? session.user.role}
             </span>
-          </span>
+          </Link>
           <SignOutButton />
         </div>
       </div>
