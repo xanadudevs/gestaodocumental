@@ -202,9 +202,22 @@ Configuração:
   Administrativo e marca os coordenadores com o nível **Coordenação** (e
   a respetiva Unidade) — aparecem primeiro na lista de coordenadores do
   formulário. O coordenador tem de ter conta na app para aprovar.
-- Define as variáveis `SMTP_*`, `MAIL_FROM` e `LICENSE_SUPPORT_EMAIL`
-  (ver `.env.example`). Se algum email falhar, fica registado no histórico
-  do pedido.
+- Configura o envio de email e `LICENSE_SUPPORT_EMAIL` (ver
+  `.env.example`). Se algum email falhar, fica registado no histórico do
+  pedido. Duas opções:
+  - **Office 365 (Microsoft Graph)** — em https://portal.azure.com →
+    *App registrations → New registration* (só contas desta
+    organização); em *API permissions* adiciona *Microsoft Graph →
+    Application permissions → Mail.Send* e pede a um administrador do
+    tenant para dar *Grant admin consent*; em *Certificates & secrets*
+    cria um client secret. Preenche `MS_GRAPH_TENANT_ID` (o *Directory
+    (tenant) ID*, não `common`), `MS_GRAPH_CLIENT_ID`,
+    `MS_GRAPH_CLIENT_SECRET` e `MS_GRAPH_SENDER` (a caixa que envia). Por
+    segurança, o administrador pode limitar a app a essa única caixa com
+    uma *Application Access Policy* do Exchange
+    (`New-ApplicationAccessPolicy -AccessRight RestrictAccess ...`).
+  - **SMTP** (Gmail com palavra-passe de aplicação, Brevo, …) — variáveis
+    `SMTP_*` e `MAIL_FROM`.
 - O limite, os tipos que contam e novos produtos configuram-se em
   `src/lib/licenses.ts` (`LICENSE_PRODUCTS`).
 
