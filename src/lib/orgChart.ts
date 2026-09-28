@@ -1,142 +1,156 @@
 import type { PrismaClient } from "@prisma/client";
+import { Level, Role } from "@/lib/enums";
 
 export type UnitNode = {
   name: string;
+  // Sigla usada no dia a dia (ex: PACE), mostrada junto ao nome.
+  acronym?: string;
+  // Nome do coordenador: ao aplicar a estrutura, fica com esta unidade e o
+  // nível Coordenação, e aparece logo escolhido nos pedidos de licença.
+  coordinator?: string;
   children?: UnitNode[];
 };
 
-// Organigrama a replicar. Estrutura: Conselho de Administração no topo,
-// duas grandes áreas (Administração de Empresa / Serviços Partilhados) +
-// o Encarregado de Proteção de Dados, depois Direções e as suas Unidades.
+// Estrutura organizacional usada na aplicação: a Direção de Arquitetura,
+// Negócio e Análise de Dados (DANAD) e as suas coordenações.
 export const ORG_CHART: UnitNode = {
-  name: "Conselho de Administração",
+  name: "Direção de Arquitetura, Negócio e Análise de Dados",
+  acronym: "DANAD",
   children: [
-    { name: "Encarregado de Proteção de Dados" },
     {
-      name: "Administração de Empresa",
-      children: [
-        {
-          name: "Direção de Gestão Corporativa, Conformidade, Auditoria e Antifraude",
-          children: [
-            { name: "Gabinete de Assessoria Geral ao Conselho de Administração" },
-            { name: "Unidade de Auditoria Interna e Conformidade" },
-          ],
-        },
-        {
-          name: "Direção de Administração Geral",
-          children: [{ name: "Unidade de Apoio Geral" }, { name: "Unidade de Aprovisionamento" }],
-        },
-        {
-          name: "Direção de Assuntos Jurídicos e Proteção de Dados",
-          children: [{ name: "Unidade de Contencioso e Contratação Pública" }],
-        },
-        {
-          name: "Direção Financeira",
-          children: [{ name: "Unidade de Serviços Financeiros" }],
-        },
-        {
-          name: "Direção de Recursos Humanos",
-          children: [{ name: "Unidade de Recursos Humanos" }, { name: "Unidade Academia SPMS" }],
-        },
-        {
-          name: "Direção de Planeamento e Desenvolvimento Organizacional",
-          children: [
-            { name: "Unidade de Controlo de Gestão e Contratualização" },
-            { name: "Unidade do Plano de Recuperação e Resiliência" },
-            { name: "Unidade de Cibersegurança" },
-          ],
-        },
-        {
-          name: "Direção de Comunicação e Relações Públicas",
-          children: [{ name: "Unidade de Comunicação" }],
-        },
-      ],
+      name: "Unidade de Planeamento, Arquitetura, Conformidade e Engenharia",
+      acronym: "PACE",
+      coordinator: "Filipe Mealha",
     },
     {
-      name: "Serviços Partilhados",
-      children: [
-        {
-          name: "Centro Nacional de Telessaúde",
-          children: [
-            { name: "Unidade da Linha SNS 24" },
-            { name: "Unidade Digital SNS 24" },
-            { name: "Linha Nacional" },
-            { name: "Adjunto CNTS" },
-          ],
-        },
-        {
-          name: "Direção do Centro de Controlo e Monitorização do SNS",
-          children: [
-            { name: "Unidade de Gestão Operacional" },
-            { name: "Unidade de Gestão do Medicamento e do Dispositivo Médico" },
-            { name: "Unidade de Sistemas de Informação do CCM" },
-            { name: "Unidade de Sistemas de Gestão de Recursos" },
-          ],
-        },
-        {
-          name: "Direção de Infraestruturas, Redes e Suporte",
-          children: [
-            { name: "Unidade de Gestão de Serviço e Suporte" },
-            { name: "Unidade de Operação e Segurança" },
-            { name: "Unidade da Rede de Dados e Informação da Saúde" },
-            { name: "Unidade de Centros de Dados" },
-          ],
-        },
-        {
-          name: "Direção de Sistemas dos Cuidados de Saúde",
-          children: [
-            { name: "Unidade de Sistemas de Gestão e Codificação Clínica" },
-            { name: "Unidade de Sistemas de Cuidados de Saúde Pública" },
-            { name: "Unidade de Sistemas de Cuidados de Saúde" },
-            { name: "Unidade de Sistemas de Apoio à Clínica" },
-            { name: "Adjunto DSCS" },
-          ],
-        },
-        {
-          name: "Direção de Arquitetura, Negócio e Análise de Dados",
-          children: [
-            { name: "Unidade de Planeamento, Arquitetura, Conformidade e Engenharia" },
-            { name: "Unidade de Advanced Analytics, Inteligência Artificial e Robótica" },
-            { name: "Unidade de Inovação Digital" },
-            { name: "Unidade de Registos Nacionais" },
-          ],
-        },
-        {
-          name: "Central de Compras da Saúde",
-          children: [
-            { name: "Unidade de Compras Agregadas de Bens e Serviços da Saúde" },
-            { name: "Unidade de Compras de Bens e Serviços Transversais" },
-            { name: "Unidade de Gestão da Informação de Compras" },
-          ],
-        },
-      ],
+      name: "Unidade de Advanced Analytics, Inteligência Artificial e Robótica",
+      acronym: "UIA",
+      coordinator: "Pedro Marques",
     },
+    { name: "Unidade de Inovação Digital", acronym: "UID", coordinator: "Rafael Franco" },
+    { name: "Unidade de Registos Nacionais", acronym: "URN", coordinator: "João Simões" },
   ],
+};
+
+function flatten(node: UnitNode, list: UnitNode[] = []) {
+  list.push(node);
+  for (const child of node.children ?? []) flatten(child, list);
+  return list;
+}
+
+const ACRONYMS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.acronym]));
+const COORDINATORS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.coordinator]));
+
+// Coordenador definido no organigrama para a unidade (se houver).
+export function configuredCoordinator(unitName: string) {
+  return COORDINATORS.get(unitName);
+}
+
+// Nome da unidade com a sigla, ex: "PACE — Unidade de Planeamento, ...".
+export function unitLabel(name: string) {
+  const acronym = ACRONYMS.get(name);
+  return acronym ? `${acronym} — ${name}` : name;
+}
+
+export type OrgChartResult = {
+  total: number;
+  removed: number;
+  kept: string[];
+  coordinatorsCreated: string[];
+  coordinatorsUpdated: string[];
 };
 
 async function upsertUnit(
   prisma: PrismaClient,
   node: UnitNode,
   parentId: string | null,
-  order: number
+  order: number,
+  ids: Map<string, string>
 ): Promise<void> {
-  const existing = await prisma.unit.findFirst({
-    where: { name: node.name, parentId: parentId ?? undefined },
-  });
-
+  // Procura pelo nome (os nomes são únicos no organigrama) para reaproveitar
+  // unidades já existentes, mesmo que antes estivessem noutro sítio da árvore.
+  const existing = await prisma.unit.findFirst({ where: { name: node.name }, orderBy: { id: "asc" } });
   const unit = existing
-    ? await prisma.unit.update({ where: { id: existing.id }, data: { order } })
+    ? await prisma.unit.update({ where: { id: existing.id }, data: { parentId, order } })
     : await prisma.unit.create({ data: { name: node.name, parentId, order } });
+  ids.set(node.name, unit.id);
 
   const children = node.children ?? [];
   for (let i = 0; i < children.length; i++) {
-    await upsertUnit(prisma, children[i], unit.id, i);
+    await upsertUnit(prisma, children[i], unit.id, i, ids);
   }
 }
 
-// Cria/atualiza a árvore de unidades a partir do ORG_CHART. Idempotente -
-// seguro de correr várias vezes (faz upsert por nome dentro do mesmo pai).
-export async function upsertOrgChart(prisma: PrismaClient): Promise<number> {
-  await upsertUnit(prisma, ORG_CHART, null, 0);
-  return prisma.unit.count();
+// Remove as unidades que já não fazem parte do organigrama. Quem lá estava
+// fica sem unidade. Unidades usadas em pedidos de licença não podem ser
+// apagadas (o histórico aponta para elas): ficam, mas soltas da árvore.
+async function pruneUnits(prisma: PrismaClient, keepIds: Set<string>) {
+  const stale = await prisma.unit.findMany({
+    where: { id: { notIn: [...keepIds] } },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { licenseRequestsCoordination: true, licenseRequestsDirection: true } },
+    },
+  });
+  const inUse = stale.filter((u) => u._count.licenseRequestsCoordination + u._count.licenseRequestsDirection > 0);
+  const removable = stale.filter((u) => !inUse.includes(u));
+
+  if (inUse.length > 0) {
+    await prisma.unit.updateMany({ where: { id: { in: inUse.map((u) => u.id) } }, data: { parentId: null } });
+  }
+  if (removable.length > 0) {
+    const ids = removable.map((u) => u.id);
+    await prisma.user.updateMany({ where: { unitId: { in: ids } }, data: { unitId: null } });
+    // Solta a árvore antes de apagar, para não haver problemas de ordem.
+    await prisma.unit.updateMany({ where: { id: { in: ids } }, data: { parentId: null } });
+    await prisma.unit.deleteMany({ where: { id: { in: ids } } });
+  }
+  return { removed: removable.length, kept: inUse.map((u) => u.name) };
+}
+
+// Garante que cada coordenador indicado no organigrama existe, está na sua
+// unidade e tem o nível Coordenação. Quem ainda não existe é criado sem
+// login - um ADMIN define depois o utilizador e a password em "Editar".
+async function upsertCoordinators(prisma: PrismaClient, ids: Map<string, string>) {
+  const created: string[] = [];
+  const updated: string[] = [];
+  for (const node of flatten(ORG_CHART)) {
+    if (!node.coordinator) continue;
+    const unitId = ids.get(node.name)!;
+    const user = await prisma.user.findFirst({
+      where: { name: { equals: node.coordinator, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+    });
+    if (user) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { unitId, level: Level.COORDENACAO, ...(user.role === Role.USER ? { role: Role.APPROVER } : {}) },
+      });
+      updated.push(node.coordinator);
+    } else {
+      await prisma.user.create({
+        data: { name: node.coordinator, unitId, level: Level.COORDENACAO, role: Role.APPROVER },
+      });
+      created.push(node.coordinator);
+    }
+  }
+  return { created, updated };
+}
+
+// Aplica o organigrama: cria/atualiza as unidades, remove as que já não
+// fazem parte dele e associa os coordenadores. Idempotente - seguro de
+// correr várias vezes.
+export async function upsertOrgChart(prisma: PrismaClient): Promise<OrgChartResult> {
+  const ids = new Map<string, string>();
+  await upsertUnit(prisma, ORG_CHART, null, 0, ids);
+  const { removed, kept } = await pruneUnits(prisma, new Set(ids.values()));
+  const { created, updated } = await upsertCoordinators(prisma, ids);
+  return {
+    total: await prisma.unit.count(),
+    removed,
+    kept,
+    coordinatorsCreated: created,
+    coordinatorsUpdated: updated,
+  };
 }

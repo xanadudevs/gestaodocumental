@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -23,6 +24,9 @@ export default async function LoginPage() {
         <div className="h-px flex-1 bg-gray-200" />
       </div>
       <CredentialsSignInForm />
+      <Link href="/licencas/nova" className="text-sm text-brand-700 hover:underline">
+        Pedir uma licença (não precisa de login) →
+      </Link>
     </div>
   );
 }

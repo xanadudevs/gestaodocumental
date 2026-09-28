@@ -1,22 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LICENSE_TYPE_LABELS, formatUserOrg } from "@/lib/labels";
 
 type Product = { key: string; name: string; types: string[]; maxPerDirection: number; countedTypes: string[] };
 type CoordinationOption = {
   id: string;
-  name: string;
+  label: string;
   depth: number;
   direction: { id: string; name: string } | null;
 };
 type Coordinator = {
   id: string;
   name: string | null;
-  email: string | null;
   level: string | null;
-  unitId: string | null;
   unit: { name: string } | null;
 };
 
@@ -26,15 +24,20 @@ export default function LicenseRequestForm({
   products,
   coordinations,
   coordinators,
+  defaultCoordinator,
   usage,
   defaults,
+  isLoggedIn,
 }: {
   products: Product[];
   coordinations: CoordinationOption[];
   coordinators: Coordinator[];
+  // coordenador de cada coordenação: unitId -> userId
+  defaultCoordinator: Record<string, string>;
   // licenças ocupadas por `${directionId}:${product}`
   usage: Record<string, number>;
   defaults: { name: string; email: string };
+  isLoggedIn: boolean;
 }) {
   const router = useRouter();
   const [productKey, setProductKey] = useState(products[0]?.key ?? "");
@@ -43,6 +46,7 @@ export default function LicenseRequestForm({
   const [coordinatorId, setCoordinatorId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState<string | null>(null);
 
   const product = products.find((p) => p.key === productKey);
   const coordination = coordinations.find((c) => c.id === coordinationId);
@@ -50,49 +54,126 @@ export default function LicenseRequestForm({
   const used = direction && product ? usage[`${direction.id}:${product.key}`] ?? 0 : null;
   const full =
     !!product && used !== null && used >= product.maxPerDirection && product.countedTypes.includes(licenseType);
+  const coordinator = coordinators.find((c) => c.id === coordinatorId);
+  const isDefaultCoordinator = !!coordination && defaultCoordinator[coordination.id] === coordinatorId;
 
-  // Sugere primeiro os coordenadores da coordenação / direção escolhida.
-  const suggested = useMemo(() => {
-    if (!coordination) return [];
-    return coordinators.filter(
-      (c) => c.unitId === coordination.id || (direction && c.unitId === direction.id)
-    );
-  }, [coordinators, coordination, direction]);
-  const others = coordinators.filter((c) => !suggested.includes(c));
+  function selectCoordination(id: string) {
+    setCoordinationId(id);
+    // O coordenador da coordenação escolhida aparece logo.
+    setCoordinatorId(defaultCoordinator[id] ?? "");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const form = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
     try {
       const res = await fetch("/api/licenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(data),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro ao submeter pedido");
-      router.push(`/licencas/${data.id}`);
-      router.refresh();
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Erro ao submeter pedido");
+      if (isLoggedIn && body.id) {
+        router.push(`/licencas/${body.id}`);
+        router.refresh();
+        return;
+      }
+      setSubmitted(coordinator?.name ?? "o coordenador");
+      form.reset();
+      setCoordinationId("");
+      setCoordinatorId("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
       setSubmitting(false);
     }
   }
 
-  function renderCoordinator(c: Coordinator) {
-    const org = formatUserOrg(c);
+  if (submitted) {
     return (
-      <option key={c.id} value={c.id}>
-        {c.name ?? c.email}
-        {org && ` — ${org}`}
-      </option>
+      <div className="max-w-2xl rounded-md border border-green-200 bg-green-50 p-5 text-sm text-green-900">
+        <p className="font-semibold">Pedido submetido.</p>
+        <p className="mt-1">
+          Fica agora a aguardar a aprovação de <strong>{submitted}</strong>. Depois de aprovado, o Gestor de
+          Licenças dá o acesso.
+        </p>
+        <button
+          onClick={() => setSubmitted(null)}
+          className="mt-3 rounded-md border border-green-700 px-3 py-1.5 font-medium text-green-800 hover:bg-green-100"
+        >
+          Fazer outro pedido
+        </button>
+      </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex max-w-2xl flex-col gap-5">
+      {/* Campo-armadilha para bots (escondido de pessoas). */}
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+
+      <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
+        <legend className="px-1 text-sm font-semibold">Coordenação</legend>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Coordenação</label>
+          <select
+            name="coordinationId"
+            required
+            value={coordinationId}
+            onChange={(e) => selectCoordination(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Escolhe a coordenação</option>
+            {coordinations.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.depth === 0 ? c.label : `↳ ${c.label}`}
+              </option>
+            ))}
+          </select>
+          {direction && product && (
+            <p className={`mt-1 text-xs ${full ? "text-red-600" : "text-gray-500"}`}>
+              {direction.name}: {used} de {product.maxPerDirection} licenças {product.name} ocupadas
+              {full && " — limite atingido, é preciso libertar uma licença antes de pedir outra."}
+            </p>
+          )}
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Coordenador que aprova</label>
+          <select
+            name="coordinatorId"
+            required
+            value={coordinatorId}
+            onChange={(e) => setCoordinatorId(e.target.value)}
+            disabled={!coordination}
+            className={`${inputClass} disabled:bg-gray-50 disabled:text-gray-400`}
+          >
+            <option value="">{coordination ? "Escolhe o coordenador" : "Escolhe primeiro a coordenação"}</option>
+            {coordinators.map((c) => {
+              const org = formatUserOrg(c);
+              return (
+                <option key={c.id} value={c.id}>
+                  {c.name ?? "—"}
+                  {org && ` — ${org}`}
+                </option>
+              );
+            })}
+          </select>
+          {coordination && (
+            <p className="mt-1 text-xs text-gray-500">
+              {isDefaultCoordinator
+                ? "Coordenador desta coordenação. Aprova o pedido nesta aplicação."
+                : defaultCoordinator[coordination.id]
+                  ? "Escolheste outro coordenador que não o desta coordenação."
+                  : "Esta coordenação ainda não tem coordenador definido — escolhe quem aprova."}
+            </p>
+          )}
+        </div>
+      </fieldset>
+
       <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
         <legend className="px-1 text-sm font-semibold">Licença</legend>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -160,65 +241,15 @@ export default function LicenseRequestForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
-        <legend className="px-1 text-sm font-semibold">Hierarquia</legend>
+        <legend className="px-1 text-sm font-semibold">Superior hierárquico</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">Superior hierárquico</label>
-            <input name="superiorName" required placeholder="Nome" className={inputClass} />
+            <label className="mb-1 block text-sm font-medium">Nome</label>
+            <input name="superiorName" required className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Email do superior</label>
+            <label className="mb-1 block text-sm font-medium">Email</label>
             <input name="superiorEmail" type="email" required className={inputClass} />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="mb-1 block text-sm font-medium">Coordenação</label>
-            <select
-              name="coordinationId"
-              required
-              value={coordinationId}
-              onChange={(e) => {
-                setCoordinationId(e.target.value);
-                setCoordinatorId("");
-              }}
-              className={inputClass}
-            >
-              <option value="">Escolhe a coordenação / unidade</option>
-              {coordinations.map((c) => (
-                <option key={c.id} value={c.id} disabled={!c.direction}>
-                  {"— ".repeat(Math.max(0, c.depth - 2))}
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {direction && product && (
-              <p className={`mt-1 text-xs ${full ? "text-red-600" : "text-gray-500"}`}>
-                {direction.name}: {used} de {product.maxPerDirection} licenças {product.name} ocupadas
-                {full && " — limite atingido, é preciso libertar uma licença antes de pedir outra."}
-              </p>
-            )}
-          </div>
-          <div className="sm:col-span-2">
-            <label className="mb-1 block text-sm font-medium">Coordenador que aprova</label>
-            <select
-              name="coordinatorId"
-              required
-              value={coordinatorId}
-              onChange={(e) => setCoordinatorId(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Escolhe o coordenador</option>
-              {suggested.length > 0 && (
-                <optgroup label="Da coordenação / direção escolhida">{suggested.map(renderCoordinator)}</optgroup>
-              )}
-              {others.length > 0 && (
-                <optgroup label={suggested.length > 0 ? "Outros" : "Coordenadores"}>
-                  {others.map(renderCoordinator)}
-                </optgroup>
-              )}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Tem de ter conta nesta aplicação - é aqui que aprova o pedido.
-            </p>
           </div>
         </div>
       </fieldset>

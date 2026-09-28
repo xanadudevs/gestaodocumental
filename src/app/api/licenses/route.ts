@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { LicenseAction, LicenseStatus, LicenseType } from "@/lib/enums";
+import { Level, LicenseAction, LicenseStatus, LicenseType, Role } from "@/lib/enums";
 import {
   OPEN_LICENSE_STATUSES,
   countActiveLicenses,
@@ -25,17 +25,22 @@ const schema = z.object({
   coordinatorId: z.string().min(1, "Coordenador em falta"),
   project: z.string().trim().optional(),
   justification: z.string().trim().min(1, "Justificação em falta"),
+  // Campo-armadilha para bots: pessoas nunca o preenchem.
+  website: z.string().optional(),
 });
 
+// Público: o formulário de pedido não exige login. Com sessão, o pedido
+// fica associado a quem o fez.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const actorId = session?.user.id ?? null;
 
   const parsed = schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Dados inválidos" }, { status: 400 });
   }
   const data = parsed.data;
+  if (data.website) return NextResponse.json({ ok: true }, { status: 201 });
 
   const product = getLicenseProduct(data.product);
   if (!product || !product.types.includes(data.licenseType)) {
@@ -47,7 +52,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Coordenação inválida (tem de pertencer a uma Direção)" }, { status: 400 });
   }
 
-  const coordinator = await prisma.user.findUnique({ where: { id: data.coordinatorId } });
+  // Só quem pode aprovar (coordenação/direção ou aprovador/admin) pode ser
+  // indicado como coordenador.
+  const coordinator = await prisma.user.findFirst({
+    where: {
+      id: data.coordinatorId,
+      OR: [
+        { level: { in: [Level.COORDENACAO, Level.DIRECAO] } },
+        { role: { in: [Role.ADMIN, Role.APPROVER] } },
+      ],
+    },
+  });
   if (!coordinator) return NextResponse.json({ error: "Coordenador inválido" }, { status: 400 });
 
   const existing = await prisma.licenseRequest.findFirst({
@@ -91,15 +106,15 @@ export async function POST(req: NextRequest) {
       coordinationId: data.coordinationId,
       directionId: direction.id,
       coordinatorId: coordinator.id,
-      requestedById: session.user.id,
-      events: { create: { actorId: session.user.id, action: LicenseAction.REQUESTED } },
+      requestedById: actorId,
+      events: { create: { actorId, action: LicenseAction.REQUESTED } },
     },
     include: licenseRequestMailInclude,
   });
 
   await notify(
     request.id,
-    session.user.id,
+    actorId,
     requestedMail(request),
     `Coordenador sem email - não foi possível notificar para aprovar o pedido ${productName(product.key)}`
   );

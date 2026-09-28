@@ -12,7 +12,7 @@ export async function POST() {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
-  const total = await upsertOrgChart(prisma);
+  const result = await upsertOrgChart(prisma);
 
-  return NextResponse.json({ total });
+  return NextResponse.json(result);
 }

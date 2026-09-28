@@ -20,10 +20,14 @@ export default function RoleForm({ userId, currentRole }: { userId: string; curr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Erro ao mudar a role");
+      }
       router.refresh();
-    } catch {
+    } catch (err) {
       setRole(currentRole);
+      alert(err instanceof Error ? err.message : "Erro ao mudar a role");
     } finally {
       setSaving(false);
     }
