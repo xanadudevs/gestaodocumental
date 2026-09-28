@@ -11,13 +11,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const document = await prisma.document.findUnique({ where: { id } });
   if (!document) return NextResponse.json({ error: "Documento não encontrado" }, { status: 404 });
+  if (!document.filePath) return NextResponse.json({ error: "Documento sem ficheiro" }, { status: 404 });
 
   const buffer = await downloadFile(document.filePath);
 
   return new NextResponse(buffer, {
     headers: {
-      "Content-Type": document.mimeType,
-      "Content-Disposition": `inline; filename="${encodeURIComponent(document.fileName)}"`,
+      "Content-Type": document.mimeType ?? "application/octet-stream",
+      "Content-Disposition": `inline; filename="${encodeURIComponent(document.fileName ?? "ficheiro")}"`,
     },
   });
 }

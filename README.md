@@ -3,9 +3,10 @@
 Aplicação de gestão e suporte da Direção de Arquitetura, Negócio e Análise
 de Dados:
 
-- **Documentos** — gestão documental com fluxo de aprovação/rejeição,
-  comentários e histórico de decisões (faturas, emails e outros
-  documentos).
+- **Documentos** — circuito documental da DANAD: entradas (faturas,
+  emails, ofícios, documentos externos) que chegam ao Diretor e descem para
+  coordenadores/gestores, pareceres que sobem, e informações/ofícios feitos
+  com os templates Word da SPMS (ver secção [Documentos](#documentos)).
 - **Licenças** — pedidos de licenças de software (ex: Figma) com
   aprovação do coordenador e limite por Direção (ver secção
   [Licenças](#licenças-ex-figma)).
@@ -21,25 +22,46 @@ de Dados:
 Tudo o que é usado aqui tem plano gratuito: Supabase (Postgres + Storage),
 Google Cloud OAuth, Azure AD App registration e Vercel.
 
-## Modelo de dados
+## Documentos
 
-- **User**: `role` = `ADMIN | APPROVER | USER`. O primeiro utilizador a
-  entrar torna-se `ADMIN` automaticamente.
-- **Document**: `type` (Fatura, Email, Contrato, Outro), `status`
-  (`DRAFT → PENDING → APPROVED/REJECTED`), aprovador atribuído, ficheiro.
-- **Comment**: comentários por documento.
-- **AuditLog**: histórico de todas as ações (upload, submissão, aprovação,
-  rejeição, comentários).
+Cada documento tem uma **referência** `NN/DANAD - UNIDADE/AAAA`, ex:
+`01/DANAD - UPACE/2026` (ou `01/DANAD/2026` quando é da Direção). A
+numeração é por unidade e por ano, partilhada por todos os tipos de
+documento. Os códigos das unidades estão em `src/lib/orgChart.ts`.
 
-## Fluxo de aprovação
+**Entradas** (menu Documentos → "Registar entrada"):
 
-1. Um utilizador carrega um documento (fatura, email, etc.) — fica em
-   **rascunho**, ou já escolhe logo um aprovador e fica **pendente**.
-2. O aprovador (role `APPROVER` ou `ADMIN`) vê o documento em "Para eu
-   aprovar" e pode **aprovar** ou **rejeitar** (com motivo obrigatório).
-3. Se rejeitado, o autor pode corrigir e reenviar para aprovação.
-4. Qualquer pessoa pode comentar em qualquer documento a qualquer momento.
-5. Tudo fica registado no histórico do documento.
+1. Regista-se a fatura (origem: Direção Financeira) ou o email, ofício ou
+   documento externo (origem: Conselho de Administração), com anexos. A
+   referência é da DANAD.
+2. A entrada vai para a caixa do **Diretor** ("Na minha caixa").
+3. O Diretor **encaminha** para um coordenador ou gestor, com despacho ou
+   instruções. Quem recebe pode voltar a encaminhar.
+4. Quem trata **dá parecer**: o parecer sobe para quem lhe encaminhou o
+   documento.
+5. O Diretor **conclui** a entrada.
+
+**Informações e ofícios** (botões "+ Informação" e "+ Ofício"):
+
+1. O autor preenche o formulário (os campos seguem os templates) e fica
+   em rascunho, com a referência da unidade que emite.
+2. **Submete** para apreciação do superior (sugere o coordenador da
+   unidade, ou o Diretor).
+3. Quem aprecia pode **dar parecer** e enviar para cima, **encaminhar** ou
+   **devolver** ao autor para corrigir.
+4. O **Diretor aprova**. O texto do despacho e os pareceres são
+   preenchidos nas caixas "Parecer" e "Despacho/Deliberação" do Word.
+5. O autor **marca como enviado** (ao CA, à outra direção ou à entidade).
+
+Em qualquer momento, **"Descarregar Word"** gera o `.docx` a partir dos
+templates SPMS (cabeçalho, rodapé e logótipo originais). Os templates estão
+em `templates/` e são gerados a partir dos modelos Word originais com
+`python3 scripts/build-templates.py <oficio.docx> <informacao.docx>`.
+
+Todos veem todos os documentos. Só quem tem o documento na caixa pode agir
+sobre ele, e só o Diretor (nível Direção) ou um ADMIN aprova ou conclui.
+Os documentos antigos (sem referência) continuam com o fluxo simples de
+aprovação.
 
 ## 1. Criar o projeto Supabase (base de dados + storage)
 

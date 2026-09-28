@@ -32,17 +32,38 @@ export const LEVEL_ORDER: Level[] = [
 ];
 
 export const DocumentType = {
-  INVOICE: "INVOICE",
-  EMAIL: "EMAIL",
+  // Entradas
+  INVOICE: "INVOICE", // vem da Direção Financeira
+  EMAIL: "EMAIL", // vem do Conselho de Administração
+  OFICIO_IN: "OFICIO_IN", // ofício recebido (Conselho de Administração)
+  EXTERNAL: "EXTERNAL", // documento externo (Conselho de Administração)
   CONTRACT: "CONTRACT",
   OTHER: "OTHER",
+  // Saídas (feitas na DANAD, com template)
+  INFORMACAO: "INFORMACAO",
+  OFICIO: "OFICIO",
 } as const;
 export type DocumentType = (typeof DocumentType)[keyof typeof DocumentType];
 
+export const DocumentFlow = {
+  IN: "IN", // entrada: chega à Direção e circula para baixo
+  OUT: "OUT", // saída: informação/ofício feito cá e que sobe para aprovação
+} as const;
+export type DocumentFlow = (typeof DocumentFlow)[keyof typeof DocumentFlow];
+
 export const DocumentStatus = {
+  // Entradas
+  RECEIVED: "RECEIVED",
+  IN_PROGRESS: "IN_PROGRESS",
+  CLOSED: "CLOSED",
+  // Saídas
   DRAFT: "DRAFT",
-  PENDING: "PENDING",
+  IN_REVIEW: "IN_REVIEW",
+  RETURNED: "RETURNED",
   APPROVED: "APPROVED",
+  SENT: "SENT",
+  // Documentos antigos
+  PENDING: "PENDING",
   REJECTED: "REJECTED",
 } as const;
 export type DocumentStatus = (typeof DocumentStatus)[keyof typeof DocumentStatus];
@@ -54,6 +75,15 @@ export const AuditAction = {
   REJECTED: "REJECTED",
   COMMENTED: "COMMENTED",
   REASSIGNED: "REASSIGNED",
+  REGISTERED: "REGISTERED",
+  CREATED: "CREATED",
+  EDITED: "EDITED",
+  FORWARDED: "FORWARDED",
+  OPINION: "OPINION",
+  RETURNED: "RETURNED",
+  CLOSED: "CLOSED",
+  SENT: "SENT",
+  ATTACHED: "ATTACHED",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

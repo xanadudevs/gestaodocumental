@@ -32,8 +32,11 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  uploadedDocuments Document[] @relation("UploadedBy")
-  approvalsAssigned Document[] @relation("AssignedApprover")
+  uploadedDocuments Document[]           @relation("UploadedBy")
+  approvalsAssigned Document[]           @relation("AssignedApprover")
+  documentsHeld     Document[]           @relation("DocumentHolder")
+  attachments       DocumentAttachment[]
+  auditTargets      AuditLog[]           @relation("AuditTarget")
   comments          Comment[]
   auditLogs         AuditLog[]
 
@@ -54,6 +57,7 @@ model Unit {
   children Unit[]  @relation("UnitHierarchy")
   users    User[]
 
+  documents                   Document[]       @relation("DocumentUnit")
   licenseRequestsCoordination LicenseRequest[] @relation("LicenseCoordination")
   licenseRequestsDirection    LicenseRequest[] @relation("LicenseDirection")
 
@@ -62,18 +66,49 @@ model Unit {
 
 model Document {
   id          String  @id @default(cuid())
-  title       String
+  // Referência, ex: 01/DANAD - UPACE/2026 (ver src/lib/references.ts). É
+  // única porque vem do contador atómico por unidade/ano (DocumentCounter);
+  // não tem @unique para o db push do build não pedir --accept-data-loss.
+  reference   String?
+  title       String // Assunto
   description String?
-  type        String  @default("OTHER") // DocumentType: INVOICE | EMAIL | CONTRACT | OTHER
-  status      String  @default("DRAFT") // DocumentStatus: DRAFT | PENDING | APPROVED | REJECTED
+  // DocumentType: INVOICE | EMAIL | OFICIO_IN | EXTERNAL | INFORMACAO | OFICIO | OTHER
+  type        String  @default("OTHER")
+  // DocumentFlow: IN (entrada: chega à Direção) | OUT (saída: informação/ofício feito cá)
+  flow        String  @default("IN")
+  // Entrada: RECEIVED | IN_PROGRESS | CLOSED
+  // Saída:   DRAFT | IN_REVIEW | RETURNED | APPROVED | SENT
+  // (PENDING | APPROVED | REJECTED | DRAFT dos documentos antigos continuam válidos)
+  status      String  @default("DRAFT")
 
-  fileName String
-  filePath String
-  fileSize Int
-  mimeType String
+  // Entrada: de onde vem (Direção Financeira, Conselho de Administração, ...)
+  origin      String?
+  // Saída: para quem vai (Conselho de Administração, outra direção, entidade externa)
+  destination String?
+  // Referência externa (V/Refª)
+  externalRef String?
+  receivedAt  DateTime?
+  sentAt      DateTime?
+
+  // Unidade dona da numeração (entradas: a Direção; saídas: quem emite)
+  unit   Unit?   @relation("DocumentUnit", fields: [unitId], references: [id])
+  unitId String?
+
+  // Campos do formulário (informação/ofício), usados para gerar o Word
+  formData Json?
+
+  // Ficheiro principal (documentos antigos); os novos usam anexos
+  fileName String?
+  filePath String?
+  fileSize Int?
+  mimeType String?
 
   uploadedBy   User   @relation("UploadedBy", fields: [uploadedById], references: [id])
   uploadedById String
+
+  // Quem tem o documento agora ("Na minha caixa")
+  holder   User?   @relation("DocumentHolder", fields: [holderId], references: [id])
+  holderId String?
 
   approver   User?   @relation("AssignedApprover", fields: [approverId], references: [id])
   approverId String?
@@ -85,12 +120,42 @@ model Document {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  comments  Comment[]
-  auditLogs AuditLog[]
+  comments    Comment[]
+  auditLogs   AuditLog[]
+  attachments DocumentAttachment[]
 
   @@index([status])
   @@index([approverId])
+  @@index([holderId])
   @@index([uploadedById])
+  @@index([flow, type])
+  @@index([reference])
+}
+
+model DocumentAttachment {
+  id        String   @id @default(cuid())
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+
+  @@index([documentId])
+}
+
+// Contador da numeração por unidade e ano (01, 02, ...)
+model DocumentCounter {
+  unitId String
+  year   Int
+  last   Int    @default(0)
+
+  @@id([unitId, year])
 }
 
 model Comment {
@@ -109,8 +174,10 @@ model Comment {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String // AuditAction: UPLOADED | SUBMITTED | APPROVED | REJECTED | COMMENTED | REASSIGNED
-  meta      String?
+  // AuditAction: UPLOADED | SUBMITTED | APPROVED | REJECTED | COMMENTED | REASSIGNED
+  //   | REGISTERED | CREATED | FORWARDED | OPINION | RETURNED | CLOSED | SENT | EDITED | ATTACHED
+  action    String
+  meta      String? // texto: despacho, parecer, motivo, ...
   createdAt DateTime @default(now())
 
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -118,6 +185,10 @@ model AuditLog {
 
   actor   User   @relation(fields: [actorId], references: [id])
   actorId String
+
+  // Para quem foi (encaminhamento, parecer, submissão)
+  target   User?   @relation("AuditTarget", fields: [targetId], references: [id])
+  targetId String?
 
   @@index([documentId])
 }
