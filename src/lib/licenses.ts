@@ -40,11 +40,10 @@ export const OPEN_LICENSE_STATUSES: string[] = [
   LicenseStatus.GRANTED,
 ];
 
-// No organigrama (ver orgChart.ts) a raiz é o Conselho de Administração
-// (profundidade 0), depois as áreas (1), as Direções (2) e as
-// Unidades/Coordenações (3). A Direção de uma unidade é o seu antepassado
-// de profundidade 2.
-export const DIRECTION_DEPTH = 2;
+// No organigrama (ver orgChart.ts) a raiz é a Direção (profundidade 0) e
+// as coordenações estão por baixo (1). A Direção de uma unidade é o seu
+// antepassado de topo.
+export const DIRECTION_DEPTH = 0;
 
 type Db = PrismaClient | Prisma.TransactionClient;
 

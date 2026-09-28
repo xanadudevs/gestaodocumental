@@ -50,7 +50,10 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
     ["Coordenador que aprova", request.coordinator.name ?? request.coordinator.email],
     ...(request.project ? [["Projeto / equipa", request.project] as [string, React.ReactNode]] : []),
     ["Justificação", <span className="whitespace-pre-wrap">{request.justification}</span>],
-    ["Pedido por", `${request.requestedBy.name ?? request.requestedBy.email} em ${formatDate(request.createdAt)}`],
+    [
+      "Pedido por",
+      `${request.requestedBy ? (request.requestedBy.name ?? request.requestedBy.email) : "Formulário público (sem login)"} em ${formatDate(request.createdAt)}`,
+    ],
     ...(request.decisionReason
       ? [["Motivo", <span className="italic">{request.decisionReason}</span>] as [string, React.ReactNode]]
       : []),
@@ -111,7 +114,9 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
         <ul className="flex flex-col gap-2 text-sm text-gray-600">
           {request.events.map((e) => (
             <li key={e.id} className={e.action === "EMAIL_FAILED" ? "text-amber-700" : undefined}>
-              <span className="font-medium text-gray-800">{e.actor.name ?? e.actor.email}</span>{" "}
+              <span className="font-medium text-gray-800">
+                {e.actor ? (e.actor.name ?? e.actor.email) : "Pedido sem login"}
+              </span>{" "}
               {LICENSE_ACTION_LABELS[e.action] ?? e.action}
               {e.meta && <span className="italic"> — {e.meta}</span>}
               <span className="ml-2 text-xs text-gray-400">{formatDate(e.createdAt)}</span>

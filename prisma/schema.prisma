@@ -150,8 +150,9 @@ model LicenseRequest {
   direction      Unit   @relation("LicenseDirection", fields: [directionId], references: [id])
   directionId    String
 
-  requestedBy   User   @relation("LicenseRequestedBy", fields: [requestedById], references: [id])
-  requestedById String
+  // Vazio quando o pedido foi feito no formulário público (sem login)
+  requestedBy   User?   @relation("LicenseRequestedBy", fields: [requestedById], references: [id])
+  requestedById String?
 
   coordinator   User   @relation("LicenseCoordinator", fields: [coordinatorId], references: [id])
   coordinatorId String
@@ -181,8 +182,9 @@ model LicenseEvent {
   request   LicenseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   requestId String
 
-  actor   User   @relation(fields: [actorId], references: [id])
-  actorId String
+  // Vazio em ações sem login (pedido feito no formulário público)
+  actor   User?   @relation(fields: [actorId], references: [id])
+  actorId String?
 
   @@index([requestId])
 }

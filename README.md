@@ -194,19 +194,23 @@ configuração principal está certa (porta da `DATABASE_URL`, `pgbouncer`,
    de correr nada manualmente.
 7. Depois do primeiro deploy: entra na app, faz login (o primeiro
    utilizador torna-se ADMIN), vai a `/admin/users` e clica em
-   **"Criar / atualizar estrutura organizacional"** — cria as
-   Direções/Unidades diretamente através da app, sem precisares de terminal
-   nem de partilhar credenciais com ninguém. É seguro clicar mais do que
-   uma vez (não duplica).
+   **"Criar / atualizar estrutura organizacional"** — aplica a estrutura
+   definida em `src/lib/orgChart.ts`: a DANAD e as suas coordenações (PACE,
+   UIA, UID, URN), cada uma com o seu coordenador. Unidades que não fazem
+   parte dela são removidas (quem lá estava fica sem unidade); os
+   coordenadores que ainda não existem são criados sem login — define-lhes
+   utilizador e password em "Editar". É seguro clicar mais do que uma vez.
 
 ## Licenças (ex: Figma)
 
 Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
 (Full ou View). Fluxo:
 
-1. Qualquer pessoa preenche **Pedir licença**: tipo (Full/View), nome e
-   email profissional do beneficiário, função, superior hierárquico,
-   coordenação, coordenador que aprova, projeto e justificação.
+1. Qualquer pessoa preenche **Pedir licença** em `/licencas/nova` —
+   **não precisa de login** (há um atalho na página de login). Escolhe
+   primeiro a coordenação e o respetivo coordenador aparece logo
+   preenchido; depois o tipo (Full/View), nome e email profissional do
+   beneficiário, função, superior hierárquico, projeto e justificação.
 2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
    contador no menu) e aprova ou rejeita (motivo obrigatório) **na
    própria aplicação**. Quem pediu pode copiar a ligação do pedido para a

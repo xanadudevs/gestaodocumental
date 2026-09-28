@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("A criar/atualizar a estrutura organizacional...");
-  const total = await upsertOrgChart(prisma);
-  console.log(`Estrutura organizacional pronta: ${total} unidades/direções.`);
+  const result = await upsertOrgChart(prisma);
+  console.log("Estrutura organizacional pronta:", result);
 
   console.log(
     "Os utilizadores são criados automaticamente no primeiro login (OAuth). " +

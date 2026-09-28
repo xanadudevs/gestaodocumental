@@ -19,7 +19,7 @@ type RequestForMail = {
   coordination: { name: string };
   direction: { name: string };
   coordinator: { name: string | null; email: string | null };
-  requestedBy: { name: string | null; email: string | null };
+  requestedBy: { name: string | null; email: string | null } | null;
 };
 
 export const licenseRequestMailInclude = {
@@ -53,7 +53,7 @@ function details(r: RequestForMail) {
     ...(r.project ? [["Projeto", r.project] as [string, string]] : []),
     ["Justificação", r.justification],
     ["Coordenador", r.coordinator.name ?? r.coordinator.email ?? "—"],
-    ["Pedido por", r.requestedBy.name ?? r.requestedBy.email ?? "—"],
+    ["Pedido por", r.requestedBy ? (r.requestedBy.name ?? r.requestedBy.email ?? "—") : "Formulário público"],
   ];
   const text = rows.map(([k, v]) => `${k}: ${v}`).join("\n");
   const html =
@@ -109,7 +109,8 @@ export function approvedMail(r: RequestForMail): MailMessage | null {
 }
 
 export function rejectedMail(r: RequestForMail): MailMessage {
-  const cc = r.requestedBy.email && r.requestedBy.email !== r.beneficiaryEmail ? r.requestedBy.email : undefined;
+  const cc =
+    r.requestedBy?.email && r.requestedBy.email !== r.beneficiaryEmail ? r.requestedBy.email : undefined;
   return {
     to: r.beneficiaryEmail,
     subject: `[Licenças] Pedido de ${title(r)} rejeitado`,
@@ -129,7 +130,7 @@ export function grantedMail(r: RequestForMail): MailMessage {
 // (ou a falta de destinatário) fica registada no histórico do pedido.
 export async function notify(
   requestId: string,
-  actorId: string,
+  actorId: string | null,
   message: MailMessage | null,
   missingRecipient?: string
 ) {
