@@ -5,6 +5,8 @@ export type UnitNode = {
   name: string;
   // Sigla usada no dia a dia (ex: PACE), mostrada junto ao nome.
   acronym?: string;
+  // Código usado na referência dos documentos, ex: UPACE em 01/DANAD - UPACE/2026
+  code?: string;
   // Nome do coordenador: ao aplicar a estrutura, fica com esta unidade e o
   // nível Coordenação, e aparece logo escolhido nos pedidos de licença.
   coordinator?: string;
@@ -16,19 +18,22 @@ export type UnitNode = {
 export const ORG_CHART: UnitNode = {
   name: "Direção de Arquitetura, Negócio e Análise de Dados",
   acronym: "DANAD",
+  code: "DANAD",
   children: [
     {
       name: "Unidade de Planeamento, Arquitetura, Conformidade e Engenharia",
       acronym: "PACE",
+      code: "UPACE",
       coordinator: "Filipe Mealha",
     },
     {
       name: "Unidade de Advanced Analytics, Inteligência Artificial e Robótica",
       acronym: "UIA",
+      code: "UIA",
       coordinator: "Pedro Marques",
     },
-    { name: "Unidade de Inovação Digital", acronym: "UID", coordinator: "Rafael Franco" },
-    { name: "Unidade de Registos Nacionais", acronym: "URN", coordinator: "João Simões" },
+    { name: "Unidade de Inovação Digital", acronym: "UID", code: "UID", coordinator: "Rafael Franco" },
+    { name: "Unidade de Registos Nacionais", acronym: "URN", code: "URN", coordinator: "João Simões" },
   ],
 };
 
@@ -40,6 +45,24 @@ function flatten(node: UnitNode, list: UnitNode[] = []) {
 
 const ACRONYMS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.acronym]));
 const COORDINATORS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.coordinator]));
+const CODES = new Map(flatten(ORG_CHART).map((n) => [n.name, n.code]));
+
+// Parte da referência que identifica a unidade: "DANAD" para a Direção,
+// "DANAD - UPACE" para uma coordenação.
+export function referenceUnitPart(unitName: string) {
+  const root = ORG_CHART.code ?? ORG_CHART.acronym ?? ORG_CHART.name;
+  if (unitName === ORG_CHART.name) return root;
+  const code = CODES.get(unitName);
+  return code ? `${root} - ${code}` : root;
+}
+
+// Sigla curta da unidade (rodapé do ofício), ex: "DANAD UIA".
+export function unitSigla(unitName: string) {
+  const root = ORG_CHART.acronym ?? "";
+  if (unitName === ORG_CHART.name) return root;
+  const acronym = ACRONYMS.get(unitName);
+  return acronym ? `${root} ${acronym}` : root;
+}
 
 // Coordenações da Direção (as unidades por baixo da raiz do organigrama).
 export const COORDINATION_NAMES = new Set((ORG_CHART.children ?? []).map((n) => n.name));

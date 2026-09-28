@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { canManageLicenses, canManageUsers } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { LicenseStatus } from "@/lib/enums";
+import { DocumentStatus, LicenseStatus } from "@/lib/enums";
 import { ROLE_LABELS } from "@/lib/labels";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -13,6 +13,12 @@ export default async function Navbar() {
 
   // Sem emails, é este contador que avisa o coordenador de pedidos para
   // aprovar e o Apoio Administrativo de pedidos para dar acesso.
+  const inboxDocuments = await prisma.document.count({
+    where: {
+      holderId: session.user.id,
+      status: { notIn: [DocumentStatus.CLOSED, DocumentStatus.SENT, DocumentStatus.REJECTED] },
+    },
+  });
   const pendingLicenses = await prisma.licenseRequest.count({
     where: {
       OR: [
@@ -30,8 +36,16 @@ export default async function Navbar() {
             Gestão e Suporte DANAD
           </Link>
           <nav className="flex gap-4 text-sm text-gray-600">
-            <Link href="/dashboard" className="hover:text-brand-600">
+            <Link href="/dashboard" className="flex items-center gap-1 hover:text-brand-600">
               Documentos
+              {inboxDocuments > 0 && (
+                <span
+                  className="rounded-full bg-red-600 px-1.5 text-xs font-medium text-white"
+                  title="Documentos na tua caixa"
+                >
+                  {inboxDocuments}
+                </span>
+              )}
             </Link>
             <Link href="/documents/new" className="hover:text-brand-600">
               Novo documento

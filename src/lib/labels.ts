@@ -1,8 +1,25 @@
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   INVOICE: "Fatura",
   EMAIL: "Email",
+  OFICIO_IN: "Ofício recebido",
+  EXTERNAL: "Documento externo",
   CONTRACT: "Contrato",
   OTHER: "Outro",
+  INFORMACAO: "Informação",
+  OFICIO: "Ofício",
+};
+
+export const DOCUMENT_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: "Por distribuir",
+  IN_PROGRESS: "Em tratamento",
+  CLOSED: "Concluído",
+  DRAFT: "Rascunho",
+  IN_REVIEW: "Em apreciação",
+  RETURNED: "Devolvido",
+  APPROVED: "Aprovado",
+  SENT: "Enviado",
+  PENDING: "Pendente",
+  REJECTED: "Rejeitado",
 };
 
 export const LEVEL_LABELS: Record<string, string> = {
@@ -15,11 +32,20 @@ export const LEVEL_LABELS: Record<string, string> = {
 
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
   UPLOADED: "carregou o documento",
-  SUBMITTED: "submeteu para aprovação",
+  SUBMITTED: "submeteu para apreciação",
   APPROVED: "aprovou o documento",
   REJECTED: "rejeitou o documento",
   COMMENTED: "comentou",
   REASSIGNED: "reatribuiu o aprovador",
+  REGISTERED: "registou a entrada",
+  CREATED: "criou o documento",
+  EDITED: "editou o documento",
+  FORWARDED: "encaminhou",
+  OPINION: "deu parecer",
+  RETURNED: "devolveu",
+  CLOSED: "concluiu",
+  SENT: "marcou como enviado",
+  ATTACHED: "anexou ficheiro(s)",
 };
 
 export function formatUserOrg(user: { unit?: { name: string } | null; level?: string | null }) {
