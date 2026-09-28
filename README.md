@@ -210,7 +210,7 @@ Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
    **não precisa de login** (há um atalho na página de login). Escolhe
    primeiro a coordenação e o respetivo coordenador aparece logo
    preenchido; depois o tipo (Full/View), nome e email profissional do
-   beneficiário, função, superior hierárquico, projeto e justificação.
+   beneficiário, função, gestor de projeto, projeto e justificação.
 2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
    contador no menu) e aprova ou rejeita (motivo obrigatório) **na
    própria aplicação**. Quem pediu pode copiar a ligação do pedido para a

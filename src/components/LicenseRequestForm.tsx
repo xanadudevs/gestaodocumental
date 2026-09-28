@@ -130,7 +130,7 @@ export default function LicenseRequestForm({
             <option value="">Escolhe a coordenação</option>
             {coordinations.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.depth === 0 ? c.label : `↳ ${c.label}`}
+                {c.label}
               </option>
             ))}
           </select>
@@ -241,7 +241,7 @@ export default function LicenseRequestForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
-        <legend className="px-1 text-sm font-semibold">Superior hierárquico</legend>
+        <legend className="px-1 text-sm font-semibold">Gestor de Projeto</legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Nome</label>

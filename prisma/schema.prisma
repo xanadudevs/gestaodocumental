@@ -138,6 +138,7 @@ model LicenseRequest {
   beneficiaryName  String
   beneficiaryEmail String // email profissional
   jobTitle         String?
+  // Gestor de Projeto (no formulário). Os campos mantêm o nome antigo.
   superiorName     String
   superiorEmail    String
   justification    String

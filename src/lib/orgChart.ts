@@ -41,6 +41,9 @@ function flatten(node: UnitNode, list: UnitNode[] = []) {
 const ACRONYMS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.acronym]));
 const COORDINATORS = new Map(flatten(ORG_CHART).map((n) => [n.name, n.coordinator]));
 
+// Coordenações da Direção (as unidades por baixo da raiz do organigrama).
+export const COORDINATION_NAMES = new Set((ORG_CHART.children ?? []).map((n) => n.name));
+
 // Coordenador definido no organigrama para a unidade (se houver).
 export function configuredCoordinator(unitName: string) {
   return COORDINATORS.get(unitName);
