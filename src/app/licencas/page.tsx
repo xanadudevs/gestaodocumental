@@ -4,8 +4,8 @@ import { getServerSession } from "next-auth";
 import type { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import LicenseStatusBadge from "@/components/LicenseStatusBadge";
-import { LICENSE_TYPE_LABELS, formatDate } from "@/lib/labels";
+import LicenseTable from "@/components/LicenseTable";
+import { unitLabel } from "@/lib/orgChart";
 import { canManageLicenses } from "@/lib/permissions";
 import { LICENSE_PRODUCTS, getDirectionUsage, productName } from "@/lib/licenses";
 import { LicenseStatus, Role } from "@/lib/enums";
@@ -177,51 +177,21 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
           Nenhuma licença encontrada.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border bg-white">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-4 py-2">Beneficiário</th>
-                <th className="px-4 py-2">Licença</th>
-                <th className="px-4 py-2">Coordenação / Direção</th>
-                <th className="px-4 py-2">Coordenador</th>
-                <th className="px-4 py-2">Estado</th>
-                <th className="px-4 py-2">Pedido</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {requests.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">
-                    <Link href={`/licencas/${r.id}`} className="font-medium text-brand-700 hover:underline">
-                      {r.beneficiaryName}
-                    </Link>
-                    <p className="text-xs text-gray-500">{r.beneficiaryEmail}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2">
-                    {productName(r.product)}{" "}
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${r.licenseType === "FULL" ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-600"}`}
-                    >
-                      {LICENSE_TYPE_LABELS[r.licenseType] ?? r.licenseType}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <p>{r.coordination.name}</p>
-                    {r.coordination.name !== r.direction.name && (
-                      <p className="text-xs text-gray-500">{r.direction.name}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-gray-600">{r.coordinator.name ?? r.coordinator.email}</td>
-                  <td className="px-4 py-2">
-                    <LicenseStatusBadge status={r.status} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-xs text-gray-500">{formatDate(r.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <LicenseTable
+          canDelete={session.user.role === Role.ADMIN}
+          rows={requests.map((r) => ({
+            id: r.id,
+            beneficiaryName: r.beneficiaryName,
+            beneficiaryEmail: r.beneficiaryEmail,
+            product: productName(r.product),
+            licenseType: r.licenseType,
+            status: r.status,
+            coordination: unitLabel(r.coordination.name),
+            direction: r.direction.name,
+            coordinator: r.coordinator.name ?? r.coordinator.email ?? "—",
+            createdAt: r.createdAt.toISOString(),
+          }))}
+        />
       )}
     </div>
   );

@@ -61,6 +61,7 @@ export type OrgChartResult = {
   kept: string[];
   coordinatorsCreated: string[];
   coordinatorsUpdated: string[];
+  requestsFixed: number;
 };
 
 async function upsertUnit(
@@ -147,6 +148,13 @@ async function upsertCoordinators(prisma: PrismaClient, ids: Map<string, string>
 export async function upsertOrgChart(prisma: PrismaClient): Promise<OrgChartResult> {
   const ids = new Map<string, string>();
   await upsertUnit(prisma, ORG_CHART, null, 0, ids);
+  // Todos os pedidos de licença são da DANAD: corrige os que ficaram
+  // associados a outra unidade de topo (ex: Conselho de Administração).
+  const directionId = ids.get(ORG_CHART.name)!;
+  const { count: requestsFixed } = await prisma.licenseRequest.updateMany({
+    where: { directionId: { not: directionId } },
+    data: { directionId },
+  });
   const { removed, kept } = await pruneUnits(prisma, new Set(ids.values()));
   const { created, updated } = await upsertCoordinators(prisma, ids);
   return {
@@ -155,5 +163,6 @@ export async function upsertOrgChart(prisma: PrismaClient): Promise<OrgChartResu
     kept,
     coordinatorsCreated: created,
     coordinatorsUpdated: updated,
+    requestsFixed,
   };
 }

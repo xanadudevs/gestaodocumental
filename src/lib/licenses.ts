@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { LicenseStatus, LicenseType } from "@/lib/enums";
+import { ORG_CHART } from "@/lib/orgChart";
 
 export type LicenseProductConfig = {
   key: string;
@@ -47,20 +48,11 @@ export const DIRECTION_DEPTH = 0;
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-export async function resolveDirection(db: Db, unitId: string) {
-  const chain: { id: string; name: string; parentId: string | null }[] = [];
-  let currentId: string | null = unitId;
-  while (currentId) {
-    const unit: { id: string; name: string; parentId: string | null } | null = await db.unit.findUnique({
-      where: { id: currentId },
-      select: { id: true, name: true, parentId: true },
-    });
-    if (!unit) return null;
-    chain.unshift(unit);
-    currentId = unit.parentId;
-    if (chain.length > 20) return null; // proteção contra ciclos
-  }
-  return chain[DIRECTION_DEPTH] ?? null;
+// Todos os pedidos são das coordenações da DANAD, por isso a Direção é
+// sempre a raiz do organigrama (procurada pelo nome, para não depender de
+// como a árvore está na base de dados).
+export async function resolveDirection(db: Db, _unitId: string) {
+  return db.unit.findFirst({ where: { name: ORG_CHART.name }, select: { id: true, name: true } });
 }
 
 export async function countActiveLicenses(db: Db, directionId: string, productKey: string) {
