@@ -44,7 +44,7 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
   const rows: [string, React.ReactNode][] = [
     ["Email profissional", request.beneficiaryEmail],
     ...(request.jobTitle ? [["Função", request.jobTitle] as [string, React.ReactNode]] : []),
-    ["Superior hierárquico", `${request.superiorName} (${request.superiorEmail})`],
+    ["Gestor de Projeto", `${request.superiorName} (${request.superiorEmail})`],
     ["Coordenação", request.coordination.name],
     ["Direção", request.direction.name],
     ["Coordenador que aprova", request.coordinator.name ?? request.coordinator.email],

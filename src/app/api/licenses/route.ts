@@ -12,6 +12,7 @@ import {
   resolveDirection,
 } from "@/lib/licenses";
 import { licenseRequestMailInclude, notify, requestedMail } from "@/lib/licenseMail";
+import { COORDINATION_NAMES } from "@/lib/orgChart";
 
 const schema = z.object({
   product: z.string(),
@@ -19,8 +20,8 @@ const schema = z.object({
   beneficiaryName: z.string().trim().min(1, "Nome em falta"),
   beneficiaryEmail: z.string().trim().toLowerCase().email("Email profissional inválido"),
   jobTitle: z.string().trim().optional(),
-  superiorName: z.string().trim().min(1, "Nome do superior em falta"),
-  superiorEmail: z.string().trim().toLowerCase().email("Email do superior inválido"),
+  superiorName: z.string().trim().min(1, "Nome do gestor de projeto em falta"),
+  superiorEmail: z.string().trim().toLowerCase().email("Email do gestor de projeto inválido"),
   coordinationId: z.string().min(1, "Coordenação em falta"),
   coordinatorId: z.string().min(1, "Coordenador em falta"),
   project: z.string().trim().optional(),
@@ -45,6 +46,11 @@ export async function POST(req: NextRequest) {
   const product = getLicenseProduct(data.product);
   if (!product || !product.types.includes(data.licenseType)) {
     return NextResponse.json({ error: "Licença inválida" }, { status: 400 });
+  }
+
+  const coordination = await prisma.unit.findUnique({ where: { id: data.coordinationId }, select: { name: true } });
+  if (!coordination || !COORDINATION_NAMES.has(coordination.name)) {
+    return NextResponse.json({ error: "Escolhe uma das coordenações da DANAD" }, { status: 400 });
   }
 
   const direction = await resolveDirection(prisma, data.coordinationId);

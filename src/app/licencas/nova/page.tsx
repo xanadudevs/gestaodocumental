@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getFlatUnits } from "@/lib/units";
 import { LICENSE_PRODUCTS, getDirectionUsage, withDirections } from "@/lib/licenses";
-import { configuredCoordinator, unitLabel } from "@/lib/orgChart";
+import { COORDINATION_NAMES, configuredCoordinator, unitLabel } from "@/lib/orgChart";
 import { Level, Role } from "@/lib/enums";
 import LicenseRequestForm from "@/components/LicenseRequestForm";
 
@@ -32,7 +32,9 @@ export default async function NewLicenseRequestPage() {
       : null,
   ]);
 
-  const unitsWithDirection = withDirections(units);
+  // Só as coordenações da DANAD (sem a própria Direção nem unidades antigas
+  // que ainda não tenham sido removidas).
+  const unitsWithDirection = withDirections(units).filter((u) => COORDINATION_NAMES.has(u.name));
   const coordinations = unitsWithDirection.map((u) => ({
     id: u.id,
     label: unitLabel(u.name),
@@ -47,9 +49,9 @@ export default async function NewLicenseRequestPage() {
   for (const unit of unitsWithDirection) {
     const inUnit = coordinators.filter((c) => c.unitId === unit.id);
     const named = configuredCoordinator(unit.name)?.toLowerCase();
-    const level = unit.depth === 0 ? Level.DIRECAO : Level.COORDENACAO;
     const match =
-      (named && inUnit.find((c) => c.name?.toLowerCase() === named)) || inUnit.find((c) => c.level === level);
+      (named && inUnit.find((c) => c.name?.toLowerCase() === named)) ||
+      inUnit.find((c) => c.level === Level.COORDENACAO);
     if (match) defaultCoordinator[unit.id] = match.id;
   }
 
