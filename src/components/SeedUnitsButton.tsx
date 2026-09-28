@@ -17,6 +17,7 @@ export default function SeedUnitsButton() {
       if (!res.ok) throw new Error(data.error ?? "Erro ao criar estrutura organizacional");
       const parts = [`Estrutura pronta: ${data.total} unidades`];
       if (data.removed) parts.push(`${data.removed} removidas`);
+      if (data.requestsFixed) parts.push(`${data.requestsFixed} pedidos corrigidos para a DANAD`);
       if (data.coordinatorsCreated?.length) {
         parts.push(`coordenadores criados (definir login em "Editar"): ${data.coordinatorsCreated.join(", ")}`);
       }

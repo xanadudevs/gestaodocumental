@@ -227,6 +227,14 @@ Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
 5. Quando a licença deixa de ser precisa, o Apoio Administrativo carrega
    em **"Libertar licença"**, que liberta o lugar na Direção.
 
+Um **Administrador** pode apagar pedidos (ex: pedidos de teste): na lista
+de Licenças escolhe-os com as caixas de seleção e carrega em "Apagar
+selecionados". O histórico de cada pedido é apagado com ele.
+
+Todos os pedidos são da DANAD: a Direção de cada pedido é sempre a raiz do
+organigrama. Aplicar a estrutura organizacional corrige pedidos antigos que
+tenham ficado associados a outra unidade de topo.
+
 A página Licenças mostra as licenças de toda a gente, com filtros Full /
 View e por estado, e a ocupação de cada Direção (X / 22).
 
