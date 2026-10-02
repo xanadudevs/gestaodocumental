@@ -296,3 +296,22 @@ Configuração:
   reencaminhamento, ou API do Gmail/Microsoft Graph) para criar documentos
   automaticamente a partir de anexos.
 - Múltiplos aprovadores em sequência (workflow com mais do que um passo).
+
+## Agente de follow-up do Outlook
+
+`scripts/outlook-followup.mjs` lê os Itens Enviados da caixa
+`MS_GRAPH_SENDER` (Microsoft Graph) e relança os emails sem resposta há mais
+de 15 dias: reencaminha o original aos mesmos destinatários com uma nota de
+lembrete no topo. Uma conversa só é relançada se não tiver nenhuma mensagem
+posterior ao teu último envio (por isso não repete lembretes).
+
+```bash
+npm run outlook:followup            # dry-run: só lista
+npm run outlook:followup -- --send  # envia os lembretes
+```
+
+Requer, na app registration do Azure, as permissões de aplicação `Mail.Read`
+e `Mail.Send` com consentimento de administrador. Opções
+(`FOLLOWUP_DAYS`, `FOLLOWUP_MAX`, `FOLLOWUP_IGNORE_DOMAINS`,
+`FOLLOWUP_MESSAGE`) em `.env.example`. Para correr todos os dias, agenda-o
+(GitHub Actions `schedule`, cron ou Vercel Cron) com `--send`.
