@@ -164,6 +164,15 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           ))}
         </dl>
 
+        {document.aiSummary && (
+          <div className="mt-3 rounded-md border border-brand-100 bg-brand-50 p-3 text-sm">
+            <p className="mb-1 text-xs font-medium uppercase text-gray-500">
+              Resumo por IA{document.aiUrgency === "ALTA" ? " · urgência alta" : ""}
+            </p>
+            <p className="whitespace-pre-wrap text-gray-700">{document.aiSummary}</p>
+            {document.aiTags.length > 0 && <p className="mt-1 text-xs text-gray-500">{document.aiTags.join(" · ")}</p>}
+          </div>
+        )}
         {document.description && <p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{document.description}</p>}
 
         <div className="mt-4 flex flex-wrap gap-2">

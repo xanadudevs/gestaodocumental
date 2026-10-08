@@ -41,6 +41,14 @@ documento. Os códigos das unidades estão em `src/lib/orgChart.ts`.
    documento.
 5. O Diretor **conclui** a entrada.
 
+**Análise por IA** (opcional): em "Registar entrada", depois de escolher os
+ficheiros (PDF, imagem, `.eml`/texto), o botão "Analisar com IA" preenche
+tipo, origem, assunto, n.º externo, data e descrição, e propõe um resumo,
+a urgência, etiquetas e a coordenação mais adequada. O resumo fica guardado
+e aparece no documento. Precisa de `ANTHROPIC_API_KEY` (sem ela o botão
+avisa e a app funciona como antes). Os ficheiros só são enviados à API
+quando se carrega no botão.
+
 **Informações e ofícios** (botões "+ Informação" e "+ Ofício"):
 
 1. O autor preenche o formulário (os campos seguem os templates) e fica
