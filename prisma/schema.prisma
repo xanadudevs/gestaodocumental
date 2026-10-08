@@ -97,6 +97,11 @@ model Document {
   // Campos do formulário (informação/ofício), usados para gerar o Word
   formData Json?
 
+  // Análise por IA (entradas): resumo, urgência (BAIXA|NORMAL|ALTA) e etiquetas
+  aiSummary String?
+  aiUrgency String?
+  aiTags    String[] @default([])
+
   // Ficheiro principal (documentos antigos); os novos usam anexos
   fileName String?
   filePath String?

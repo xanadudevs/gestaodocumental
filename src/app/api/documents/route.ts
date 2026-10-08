@@ -90,6 +90,13 @@ export async function POST(req: NextRequest) {
         status: DocumentStatus.RECEIVED,
         origin: str("origin") || defaultOrigin(type) || null,
         externalRef: str("externalRef") || null,
+        aiSummary: str("aiSummary").slice(0, 2000) || null,
+        aiUrgency: ["BAIXA", "NORMAL", "ALTA"].includes(str("aiUrgency")) ? str("aiUrgency") : null,
+        aiTags: str("aiTags")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, 5),
         receivedAt,
         unitId: direction.id,
         uploadedById: session.user.id,

@@ -7,6 +7,19 @@ import { DOCUMENT_TYPE_LABELS } from "@/lib/labels";
 type Person = { id: string; label: string };
 type EntryType = { type: string; origin: string };
 
+type Analysis = {
+  type: string;
+  origin: string;
+  title: string;
+  externalRef: string;
+  receivedAt: string;
+  description: string;
+  summary: string;
+  urgency: "BAIXA" | "NORMAL" | "ALTA";
+  suggestedUnit: string;
+  tags: string[];
+};
+
 const inputClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm";
 
 export default function EntryForm({
@@ -23,6 +36,42 @@ export default function EntryForm({
   const [origin, setOrigin] = useState(types[0]?.origin ?? "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [ai, setAi] = useState<Analysis | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function analyze(form: HTMLFormElement) {
+    setAiError(null);
+    const files = (form.elements.namedItem("files") as HTMLInputElement).files;
+    if (!files || files.length === 0) {
+      setAiError("Escolhe primeiro os ficheiros.");
+      return;
+    }
+    const body = new FormData();
+    Array.from(files).forEach((f) => body.append("files", f));
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/documents/analyze", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro na análise");
+      const a = data as Analysis;
+      const set = (name: string, value: string) => {
+        const el = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null;
+        if (el && value) el.value = value;
+      };
+      if (types.some((t) => t.type === a.type)) setType(a.type);
+      if (a.origin) setOrigin(a.origin);
+      set("title", a.title);
+      set("externalRef", a.externalRef);
+      set("description", a.description);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(a.receivedAt)) set("receivedAt", a.receivedAt);
+      setAi(a);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -111,6 +160,28 @@ export default function EntryForm({
       <div>
         <label className="mb-1 block text-sm font-medium">Ficheiros (fatura, email, ofício…)</label>
         <input name="files" type="file" multiple className={inputClass} />
+        <button
+          type="button"
+          disabled={analyzing}
+          onClick={(e) => analyze(e.currentTarget.form!)}
+          className="mt-2 rounded-md border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+        >
+          {analyzing ? "A analisar..." : "✨ Analisar com IA e preencher"}
+        </button>
+        {aiError && <p className="mt-1 text-sm text-red-600">{aiError}</p>}
+        {ai && (
+          <div className="mt-2 rounded-md border border-brand-100 bg-brand-50 p-3 text-sm">
+            <p className="font-medium">
+              Campos preenchidos pela IA — confirma antes de registar.
+              {ai.urgency === "ALTA" && <span className="ml-2 text-red-600">Urgência alta</span>}
+            </p>
+            <p className="mt-1 text-gray-700">{ai.summary}</p>
+            {ai.suggestedUnit && <p className="mt-1 text-gray-600">Sugestão de encaminhamento: {ai.suggestedUnit}</p>}
+            <input type="hidden" name="aiSummary" value={ai.summary} />
+            <input type="hidden" name="aiUrgency" value={ai.urgency} />
+            <input type="hidden" name="aiTags" value={ai.tags.join(",")} />
+          </div>
+        )}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
