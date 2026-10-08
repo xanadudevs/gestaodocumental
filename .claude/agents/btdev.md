@@ -1,6 +1,6 @@
 ---
-name: melhorar-app
-description: Analisa a aplicação de gestão documental da DANAD e propõe (ou implementa, se pedido) melhorias e novas funcionalidades, com foco em IA para classificar e tratar documentos. Usar quando se pedir "o que podemos melhorar", novas funcionalidades ou um plano de evolução.
+name: btdev
+description: BTDev, o engenheiro de produto desta app. Analisa a aplicação de gestão documental da DANAD e propõe (ou implementa, se pedido) melhorias e novas funcionalidades, com foco em IA para classificar e tratar documentos. Usar quando se pedir "o que podemos melhorar", novas funcionalidades ou um plano de evolução.
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
