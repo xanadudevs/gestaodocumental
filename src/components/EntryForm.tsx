@@ -13,6 +13,7 @@ type Analysis = {
   title: string;
   externalRef: string;
   receivedAt: string;
+  dueDate: string;
   description: string;
   summary: string;
   urgency: "BAIXA" | "NORMAL" | "ALTA";
@@ -65,6 +66,7 @@ export default function EntryForm({
       set("externalRef", a.externalRef);
       set("description", a.description);
       if (/^\d{4}-\d{2}-\d{2}$/.test(a.receivedAt)) set("receivedAt", a.receivedAt);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(a.dueDate)) set("dueDate", a.dueDate);
       setAi(a);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : "Erro inesperado");
@@ -140,6 +142,11 @@ export default function EntryForm({
           <label className="mb-1 block text-sm font-medium">Data de entrada</label>
           <input name="receivedAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={inputClass} />
         </div>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Prazo (opcional)</label>
+        <input name="dueDate" type="date" className={inputClass} />
+        <p className="mt-1 text-xs text-gray-500">Se houver prazo, o documento aparece destacado quando estiver a terminar.</p>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">Descrição (opcional)</label>

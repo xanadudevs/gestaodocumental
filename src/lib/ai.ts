@@ -12,6 +12,7 @@ export type DocumentAnalysis = {
   title: string;
   externalRef: string;
   receivedAt: string;
+  dueDate: string;
   description: string;
   summary: string;
   urgency: "BAIXA" | "NORMAL" | "ALTA";
@@ -30,6 +31,7 @@ const SCHEMA = {
     "title",
     "externalRef",
     "receivedAt",
+    "dueDate",
     "description",
     "summary",
     "urgency",
@@ -42,6 +44,7 @@ const SCHEMA = {
     title: { type: "string" },
     externalRef: { type: "string" },
     receivedAt: { type: "string" },
+    dueDate: { type: "string" },
     description: { type: "string" },
     summary: { type: "string" },
     urgency: { type: "string", enum: ["BAIXA", "NORMAL", "ALTA"] },
@@ -59,6 +62,7 @@ Campos:
 - title: assunto curto e claro, como constaria num registo de correspondência.
 - externalRef: número da fatura/ofício ou a referência do remetente (V/Refª). Vazio se não existir.
 - receivedAt: data do documento em AAAA-MM-DD. Vazio se não for legível.
+- dueDate: prazo para responder ou pagar, em AAAA-MM-DD, só se estiver explícito nos ficheiros (data de vencimento, "até dia X", "no prazo de N dias" contado a partir da data do documento). Vazio caso contrário.
 - description: 1 a 3 frases com o essencial (valores, prazos, o que é pedido).
 - summary: resumo de 2 a 4 linhas para quem vai decidir, incluindo prazos e valores.
 - urgency: ALTA se houver prazo curto ou pedido urgente, BAIXA se for meramente informativo, senão NORMAL.

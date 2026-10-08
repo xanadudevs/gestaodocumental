@@ -9,7 +9,7 @@ import SubmitForm from "@/components/SubmitForm";
 import CommentForm from "@/components/CommentForm";
 import DocumentActions from "@/components/DocumentActions";
 import AttachmentUpload from "@/components/AttachmentUpload";
-import { DOCUMENT_TYPE_LABELS, AUDIT_ACTION_LABELS, formatDate, formatUserOrg } from "@/lib/labels";
+import { DOCUMENT_TYPE_LABELS, AUDIT_ACTION_LABELS, formatDate, formatDay, formatUserOrg } from "@/lib/labels";
 import { canDecideOn } from "@/lib/permissions";
 import { AuditAction, DocumentType, Level, Role } from "@/lib/enums";
 import { DocumentActionType, availableActions, isLegacy, isOutgoing, levelRank, paragraphs } from "@/lib/documents";
@@ -118,6 +118,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         ] as [string, React.ReactNode][])
       : ([
           ["Origem", document.origin ?? "—"],
+          ...(document.dueDate ? [["Prazo", formatDay(document.dueDate)] as [string, React.ReactNode]] : []),
           ...(document.receivedAt ? [["Data de entrada", formatDate(document.receivedAt)] as [string, React.ReactNode]] : []),
         ] as [string, React.ReactNode][])),
     ...(document.externalRef ? [["Referência externa", document.externalRef] as [string, React.ReactNode]] : []),
