@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { UNIT_LABELS, UNIT_ORDER, loadSystems, summarize } from "@/lib/status";
+import { COMPONENT_KIND_LABELS, STATUS_LABELS, STATUS_STYLES, UNIT_LABELS, UNIT_ORDER, loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import { isValidStatusToken } from "@/lib/statusPublic";
 import StatusSummaryCards, { StatusBar } from "@/components/StatusSummaryCards";
@@ -10,7 +10,8 @@ import AutoRefresh from "@/components/AutoRefresh";
 export const metadata: Metadata = { title: "Estado dos sistemas DANAD", robots: { index: false, follow: false } };
 
 // Página sem login mas protegida por token (?token=...), só de leitura. Mostra apenas o estado de
-// cada sistema: não expõe responsáveis, notas, componentes nem quem alterou.
+// cada sistema e dos seus componentes (aplicação, base de dados, serviços):
+// não expõe responsáveis, notas nem quem alterou.
 export default async function PublicStatusPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
   if (!isValidStatusToken(token)) {
@@ -49,7 +50,7 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
       </p>
 
       {systems.length === 0 ? (
-        <p className="rounded-md border border-dashed p-8 text-center text-sm text-gray-500">Sem dados de momento.</p>
+        <p className="rounded-md border border-dashed p-8 text-center text-sm text-gray-500">Ainda não há sistemas registados. Um Administrador tem de os importar em /estado.</p>
       ) : (
         <>
           <StatusSummaryCards summary={summary} />
@@ -78,11 +79,38 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
             return (
               <section key={code} className="mb-5">
                 <h2 className="mb-2 text-sm font-semibold text-gray-700">{UNIT_LABELS[code]}</h2>
-                <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {items.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-sm">
-                      <span className="truncate">{s.name}</span>
-                      <StatusBadge status={s.status} />
+                    <li
+                      key={s.id}
+                      className={`rounded-md border bg-white p-3 text-sm ${
+                        s.status === "DOWN"
+                          ? "border-red-300"
+                          : s.status === "DEGRADED"
+                            ? "border-amber-300"
+                            : s.status === "OK"
+                              ? "border-green-200"
+                              : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{s.name}</span>
+                        <StatusBadge status={s.status} />
+                      </div>
+                      <ul className="mt-2 space-y-1 border-t pt-2">
+                        {s.components.map((c) => (
+                          <li key={c.id} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full ${STATUS_STYLES[c.status].dot}`} />
+                              {c.name}
+                              <span className="text-gray-400">{COMPONENT_KIND_LABELS[c.kind] ?? c.kind}</span>
+                            </span>
+                            <span className={c.status === "OK" ? "text-green-700" : c.status === "UNKNOWN" ? "text-gray-500" : "font-medium text-red-700"}>
+                              {STATUS_LABELS[c.status]}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
