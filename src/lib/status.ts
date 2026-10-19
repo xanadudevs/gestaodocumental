@@ -75,77 +75,12 @@ export const UNIT_LABELS: Record<string, string> = {
 
 export const UNIT_ORDER = ["DANAD", "UID", "UIA", "URN", "UPACE"];
 
-// Catálogo inicial, a partir da tabela de colaboradores/responsabilidades.
-// Ficam de fora as responsabilidades que não são sistemas (assessoria,
-// conformidade, UX/UI, gestão de serviço, ...). O Administrador pode
-// acrescentar ou remover sistemas na própria página.
-export const SYSTEM_CATALOG: { unit: string; owner: string; systems: string[] }[] = [
-  { unit: "UID", owner: "Rafael Franco", systems: ["Central de Negócios"] },
-  { unit: "UID", owner: "Camila Cruz", systems: ["Portal Scubo"] },
-  { unit: "UID", owner: "Carlos Ferreira", systems: ["Plataforma Live", "Teleconsultas", "Central Telecuidados"] },
-  { unit: "UID", owner: "Pedro Pinho", systems: ["Detecção Precoce", "Serviço Apoio Técnico Detect SNS24"] },
-  { unit: "UID", owner: "Sérgio Veiga", systems: ["Portal Inovar Saúde"] },
-  { unit: "UIA", owner: "Ana Lopes", systems: ["Portal Tempos"] },
-  { unit: "UIA", owner: "Andreia Serrano", systems: ["Analítica", "Speed-to-Text"] },
-  { unit: "UIA", owner: "Isa Nunes", systems: ["SDM"] },
-  { unit: "UIA", owner: "João Melão", systems: ["SIMSNS", "SIARS", "MIMUF"] },
-  { unit: "UIA", owner: "Licínio Gonçalves", systems: ["BI CSP", "PAUDES", "Equidade"] },
-  { unit: "UIA", owner: "Maria Esquível", systems: ["BI Hospitalar", "BI SINAVE"] },
-  { unit: "UIA", owner: "Mei Li (Daniel Domingues)", systems: ["BI SIGA / SINACC"] },
-  { unit: "UIA", owner: "Pedro Cepa", systems: ["SIGEF"] },
-  { unit: "UIA", owner: "Susana Tomé", systems: ["SICA"] },
-  { unit: "UIA", owner: "Sara Hassam", systems: ["BIRH", "Transparência"] },
-  { unit: "UIA", owner: "Sara Franco", systems: ["BIMH", "BDMH", "BIER"] },
-  { unit: "UIA", owner: "Vanessa Lima", systems: ["Data Lake"] },
-  { unit: "URN", owner: "Ana Carvalho", systems: ["RNU", "RNU 2.0"] },
-  { unit: "URN", owner: "Marco Dias", systems: ["RNP", "RNP 2.0", "PRVR", "INPS"] },
-  {
-    unit: "URN",
-    owner: "Susana Vilares",
-    systems: ["SICO", "RENNDA", "RENTEV", "RENTEV 2.0", "SICO 2.0", "RENNDA NEXTGen"],
-  },
-  { unit: "URN", owner: "Giselly Vieira", systems: ["SGES", "SGES 2.0", "EcoSaúde"] },
-  { unit: "UPACE", owner: "André Brito", systems: ["PNB"] },
-  { unit: "UPACE", owner: "João Quina", systems: ["LIGHT"] },
-  {
-    unit: "UPACE",
-    owner: "Patrícia Rodrigues",
-    systems: ["Servidor Terminologias", "Plataforma IOP", "Health Data Dispatcher"],
-  },
-  { unit: "UPACE", owner: "Susana Dias", systems: ["Portal ELO"] },
-];
-
 // Componentes criados por omissão em cada sistema novo; o Administrador
 // acrescenta outros (ex: "API de integração", "Servidor") onde fizer falta.
 export const DEFAULT_COMPONENTS = [
   { name: "Aplicação", kind: ComponentKind.APPLICATION },
   { name: "Base de dados", kind: ComponentKind.DATABASE },
 ];
-
-export type SeedResult = { created: string[]; existing: number };
-
-export async function seedSystemCatalog(prisma: PrismaClient): Promise<SeedResult> {
-  const existing = new Set((await prisma.statusSystem.findMany({ select: { name: true } })).map((s) => s.name));
-  const created: string[] = [];
-  for (const group of SYSTEM_CATALOG) {
-    for (const name of group.systems) {
-      if (existing.has(name)) continue;
-      await prisma.statusSystem.create({
-        data: {
-          name,
-          unitCode: group.unit,
-          ownerName: group.owner,
-          components: {
-            create: DEFAULT_COMPONENTS.map((c, i) => ({ ...c, order: i })),
-          },
-        },
-      });
-      existing.add(name);
-      created.push(name);
-    }
-  }
-  return { created, existing: existing.size - created.length };
-}
 
 // --- Leitura e agregação (usadas na página, no relatório e na API) ---
 

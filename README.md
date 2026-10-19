@@ -92,12 +92,15 @@ componentes.
   sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
   de cada sistema; não mostra responsáveis, notas, componentes nem quem
   alterou.
-- **Administrador**: "Carregar catálogo DANAD" cria os sistemas da tabela de
-  responsáveis (`SYSTEM_CATALOG` em `src/lib/status.ts`; só entram sistemas,
-  não funções como assessoria ou conformidade); define a criticidade de cada
-  sistema, acrescenta/remove sistemas e componentes, e faz uma **nova
-  ronda** (tudo volta a "Por verificar" e a linha temporal é limpa) para
-  cada responsável confirmar o seu sistema no início de uma crise.
+- **Administrador**: importa os sistemas do Excel (cola as colunas Unidade,
+  Colaborador e Função/Responsabilidade; cada responsabilidade passa a ser um
+  sistema, com o colaborador como responsável, e há pré-visualização para
+  desmarcar o que não é sistema; "Usar a tabela DANAD" preenche a tabela
+  atual). Reimportar atualiza unidade e responsável sem mexer no estado.
+  Também define a criticidade de cada sistema, acrescenta/remove sistemas e
+  componentes, e faz uma **nova ronda** (tudo volta a "Por verificar" e a
+  linha temporal é limpa) para cada responsável confirmar o seu sistema no
+  início de uma crise.
 
 ## 1. Criar o projeto Supabase (base de dados + storage)
 
