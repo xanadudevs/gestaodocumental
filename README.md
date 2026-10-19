@@ -90,8 +90,8 @@ componentes.
   token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como `%23` no link, ou
   escreve-se o token no formulário da página), atualiza-se
   sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
-  de cada sistema; não mostra responsáveis, notas, componentes nem quem
-  alterou.
+  de cada sistema e dos seus componentes (aplicação, base de dados,
+  serviços); não mostra responsáveis, notas nem quem alterou.
 - **Administrador**: importa os sistemas do Excel (cola as colunas Unidade,
   Colaborador e Função/Responsabilidade; cada responsabilidade passa a ser um
   sistema, com o colaborador como responsável, e há pré-visualização para
