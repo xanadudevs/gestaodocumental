@@ -344,7 +344,9 @@ function AdminSystemControls({
   const [replace, setReplace] = useState(false);
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md bg-gray-50 p-2 text-xs">
-      <span className="text-gray-500">Administração:</span>
+      <span className="font-medium text-gray-600">Opções do administrador</span>
+      <label className="flex items-center gap-1.5 text-gray-600" title="Os sistemas críticos aparecem destacados na lista e no relatório">
+        Criticidade
       <select
         value={system.criticality}
         disabled={busy}
@@ -358,6 +360,7 @@ function AdminSystemControls({
           </option>
         ))}
       </select>
+      </label>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}

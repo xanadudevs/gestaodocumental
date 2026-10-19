@@ -84,6 +84,7 @@ export const UNIT_ORDER = ["DANAD", "UID", "UIA", "URN", "UPACE"];
 export const DEFAULT_COMPONENTS = [
   { name: "Aplicação", kind: ComponentKind.APPLICATION },
   { name: "Base de dados", kind: ComponentKind.DATABASE },
+  { name: "Serviços / API", kind: ComponentKind.SERVICE },
 ];
 
 // --- Leitura e agregação (usadas na página, no relatório e na API) ---

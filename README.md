@@ -70,8 +70,8 @@ aprovação.
 ## Estado dos sistemas
 
 Menu **Estado dos sistemas** (`/estado`). Cada sistema (RNU, SICO, Portal
-Scubo, Data Lake, ...) tem **componentes** — por omissão *Aplicação* e
-*Base de dados*, e o Administrador acrescenta outros (serviço/API,
+Scubo, Data Lake, ...) tem **componentes** — por omissão *Aplicação*,
+*Base de dados* e *Serviços / API*, e o Administrador acrescenta outros (serviço/API,
 integração, infraestrutura). Cada componente está em **OK**, **Degradado**,
 **Em baixo** ou **Por verificar**; o estado do sistema é o pior dos seus
 componentes.

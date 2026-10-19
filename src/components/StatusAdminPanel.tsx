@@ -46,6 +46,21 @@ export default function StatusAdminPanel({ empty, existing }: { empty: boolean; 
         <button
           disabled={busy}
           onClick={() =>
+            run("/api/status/apply-defaults", undefined, (d) => {
+              const parts = [];
+              if (d.breakdown) parts.push(`${d.breakdown} sistemas passaram a ter uma linha por ULS/serviço (LIGHT, PNB)`);
+              if (d.services) parts.push(`"Serviços / API" acrescentado a ${d.services} sistemas`);
+              return parts.length ? `${parts.join("; ")}.` : "Os componentes já estavam atualizados.";
+            })
+          }
+          className="rounded-md border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          title="LIGHT por ULS, PNB por serviço e Serviços / API nos restantes"
+        >
+          Atualizar componentes dos sistemas
+        </button>
+        <button
+          disabled={busy}
+          onClick={() =>
             confirm(
               'Nova ronda: todos os componentes voltam a "Por verificar" e a linha temporal é limpa. Continuar?'
             ) && run("/api/status/reset", undefined, (d) => `${d.reset} componentes por verificar.`)
