@@ -28,6 +28,12 @@ export default async function Navbar() {
     },
   });
 
+  // Sistemas que não estão OK (em baixo ou degradados): o que interessa
+  // ver à primeira vista numa crise.
+  const problemSystems = await prisma.statusSystem.count({
+    where: { components: { some: { status: { in: ["DOWN", "DEGRADED"] } } } },
+  });
+
   return (
     <header className="border-b bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -58,6 +64,17 @@ export default async function Navbar() {
                   title="Pedidos à espera de ti"
                 >
                   {pendingLicenses}
+                </span>
+              )}
+            </Link>
+            <Link href="/estado" className="flex items-center gap-1 hover:text-brand-600">
+              Estado dos sistemas
+              {problemSystems > 0 && (
+                <span
+                  className="rounded-full bg-red-600 px-1.5 text-xs font-medium text-white"
+                  title="Sistemas com problemas"
+                >
+                  {problemSystems}
                 </span>
               )}
             </Link>
