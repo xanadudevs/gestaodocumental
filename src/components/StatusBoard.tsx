@@ -33,6 +33,8 @@ export type BoardSystem = {
   components: BoardComponent[];
 };
 
+// A partir de quantos componentes aparece a escolha de vários de uma vez.
+const BULK_MIN = 5;
 const ACTIONS = ["OK", "DEGRADED", "DOWN", "UNKNOWN"] as const;
 const BUTTON_STYLES: Record<string, { on: string; off: string }> = {
   OK: { on: "bg-green-600 text-white", off: "text-green-700 hover:bg-green-50" },
@@ -74,6 +76,11 @@ export default function StatusBoard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // Sistemas com muitos componentes (LIGHT por ULS, PNB por serviço):
+  // escolher vários e atualizá-los de uma vez.
+  const [picked, setPicked] = useState<Record<string, Set<string>>>({});
+  const [compFilter, setCompFilter] = useState<Record<string, string>>({});
+  const [bulkNote, setBulkNote] = useState<Record<string, string>>({});
 
 
   async function call(key: string, url: string, method: string, body?: unknown) {
@@ -92,6 +99,17 @@ export default function StatusBoard({
     } finally {
       setBusy(null);
     }
+  }
+
+  const pickedIn = (systemId: string) => picked[systemId] ?? new Set<string>();
+  const setPickedIn = (systemId: string, next: Set<string>) => setPicked((prev) => ({ ...prev, [systemId]: next }));
+
+  async function applyBulk(system: BoardSystem, status: string) {
+    const ids = [...pickedIn(system.id)];
+    if (ids.length === 0) return;
+    await call(system.id, `${apiBase}/components/bulk`, "POST", { ids, status, note: bulkNote[system.id] || undefined });
+    setPickedIn(system.id, new Set());
+    setBulkNote((n) => ({ ...n, [system.id]: "" }));
   }
 
   const toggle = (id: string) =>
@@ -229,8 +247,36 @@ export default function StatusBoard({
 
                   {expanded && (
                     <div className="mt-3 space-y-2 border-t pt-3">
-                      {s.components.map((c) => (
+                      {s.components.length > BULK_MIN && (
+                        <BulkBar
+                          system={s}
+                          filter={compFilter[s.id] ?? ""}
+                          onFilter={(v) => setCompFilter((f) => ({ ...f, [s.id]: v }))}
+                          picked={pickedIn(s.id)}
+                          onPick={(next) => setPickedIn(s.id, next)}
+                          note={bulkNote[s.id] ?? ""}
+                          onNote={(v) => setBulkNote((n) => ({ ...n, [s.id]: v }))}
+                          busy={busy === s.id}
+                          onApply={(status) => applyBulk(s, status)}
+                        />
+                      )}
+                      {s.components
+                        .filter((c) => c.name.toLowerCase().includes((compFilter[s.id] ?? "").trim().toLowerCase()))
+                        .map((c) => (
                         <div key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
+                          {s.components.length > BULK_MIN && (
+                            <input
+                              type="checkbox"
+                              checked={pickedIn(s.id).has(c.id)}
+                              onChange={(e) => {
+                                const next = new Set(pickedIn(s.id));
+                                if (e.target.checked) next.add(c.id);
+                                else next.delete(c.id);
+                                setPickedIn(s.id, next);
+                              }}
+                              aria-label={`Escolher ${c.name}`}
+                            />
+                          )}
                           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_STYLES[c.status].dot}`} />
                           <span className="w-full sm:w-72">
                             {c.name}
@@ -396,6 +442,87 @@ function AdminSystemControls({
           </button>
         </div>
       </details>
+    </div>
+  );
+}
+
+function BulkBar({
+  system,
+  filter,
+  onFilter,
+  picked,
+  onPick,
+  note,
+  onNote,
+  busy,
+  onApply,
+}: {
+  system: BoardSystem;
+  filter: string;
+  onFilter: (v: string) => void;
+  picked: Set<string>;
+  onPick: (next: Set<string>) => void;
+  note: string;
+  onNote: (v: string) => void;
+  busy: boolean;
+  onApply: (status: string) => void;
+}) {
+  const shown = system.components.filter((c) => c.name.toLowerCase().includes(filter.trim().toLowerCase()));
+  const allShownPicked = shown.length > 0 && shown.every((c) => picked.has(c.id));
+  return (
+    <div className="sticky top-0 z-10 space-y-2 rounded-md border bg-gray-50 p-2 text-xs">
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-1.5 font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={allShownPicked}
+            onChange={(e) => {
+              const next = new Set(picked);
+              for (const c of shown) {
+                if (e.target.checked) next.add(c.id);
+                else next.delete(c.id);
+              }
+              onPick(next);
+            }}
+          />
+          Selecionar todos{filter.trim() ? " (filtrados)" : ""}
+        </label>
+        <input
+          value={filter}
+          onChange={(e) => onFilter(e.target.value)}
+          placeholder="Filtrar por nome"
+          className="min-w-[10rem] flex-1 rounded-md border px-2 py-1"
+        />
+        <span className="text-gray-500">
+          {picked.size} de {system.components.length} selecionados
+        </span>
+      </div>
+      {picked.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium text-gray-700">Marcar selecionados como:</span>
+          <div className="flex overflow-hidden rounded-md border bg-white">
+            {ACTIONS.map((a) => (
+              <button
+                key={a}
+                disabled={busy}
+                onClick={() => onApply(a)}
+                className={`px-2.5 py-1 font-medium disabled:opacity-50 ${BUTTON_STYLES[a].off}`}
+              >
+                {STATUS_LABELS[a]}
+              </button>
+            ))}
+          </div>
+          <input
+            value={note}
+            onChange={(e) => onNote(e.target.value)}
+            placeholder="Nota (opcional)"
+            className="min-w-[10rem] flex-1 rounded-md border px-2 py-1"
+          />
+          <button onClick={() => onPick(new Set())} className="text-gray-500 hover:underline">
+            Limpar seleção
+          </button>
+        </div>
+      )}
     </div>
   );
 }

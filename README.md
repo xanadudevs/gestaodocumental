@@ -91,6 +91,10 @@ componentes.
   `%23` no link, ou escreve-se o token no formulário da página). Quem tem o
   link vê **e atualiza** o estado de todos os sistemas e componentes; Atualiza-se sozinha de minuto a minuto.
   Não há contas nem links por pessoa: tratar o link como uma password.
+- **Vários componentes de uma vez**: nos sistemas com muitos componentes (LIGHT por
+  ULS, PNB por serviço) cada componente tem uma caixa de seleção, com
+  "Selecionar todos", filtro por nome e botões para marcar os selecionados como
+  OK, Degradado, Em baixo ou Por verificar (com nota opcional).
 - **Por verificar**: cada sistema e cada componente tem um botão "Por verificar"
   para voltar a pedir confirmação (útil no início de uma crise ou de uma ronda).
 - **Administrador**: no painel "Novo sistema" cria sistemas. Se o catálogo

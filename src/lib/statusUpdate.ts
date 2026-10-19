@@ -84,3 +84,40 @@ export async function setAllComponents(
   ]);
   return { ok: true };
 }
+
+// Define o mesmo estado em vários componentes de uma vez (os escolhidos num
+// sistema com muitos componentes, como o LIGHT por ULS).
+export async function updateComponents(
+  prisma: PrismaClient,
+  ids: string[],
+  status: string,
+  note: string | undefined,
+  actor: Actor
+): Promise<UpdateResult & { count?: number }> {
+  const components = await prisma.statusComponent.findMany({ where: { id: { in: ids } } });
+  if (components.length === 0) return { ok: false, status: 404, error: "Componentes não encontrados" };
+
+  const newNote = status === "OK" || status === "UNKNOWN" ? null : note || null;
+  const now = new Date();
+  await prisma.$transaction([
+    ...components.map((c) =>
+      prisma.statusComponent.update({
+        where: { id: c.id },
+        data: { status, note: newNote, statusAt: now, statusById: actor.id, statusByName: actor.name },
+      })
+    ),
+    ...components.map((c) =>
+      prisma.statusEvent.create({
+        data: {
+          systemId: c.systemId,
+          componentName: c.name,
+          fromStatus: c.status,
+          toStatus: status,
+          note: newNote ?? undefined,
+          actorName: actor.name,
+        },
+      })
+    ),
+  ]);
+  return { ok: true, count: components.length };
+}
