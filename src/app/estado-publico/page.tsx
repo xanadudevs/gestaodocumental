@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { UNIT_LABELS, UNIT_ORDER, loadSystems, summarize } from "@/lib/status";
+import { loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import { isValidStatusToken } from "@/lib/statusPublic";
-import StatusSummaryCards, { StatusBar } from "@/components/StatusSummaryCards";
+import StatusOverview from "@/components/StatusOverview";
 import StatusBoard from "@/components/StatusBoard";
 import AutoRefresh from "@/components/AutoRefresh";
 
@@ -56,24 +56,9 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
         </p>
       ) : (
         <>
-          <StatusSummaryCards summary={summary} />
+          <StatusOverview systems={systems} />
 
-          <div className="mb-6 grid gap-3 sm:grid-cols-2">
-            {summary.byUnit
-              .sort((a, b) => UNIT_ORDER.indexOf(a.unit) - UNIT_ORDER.indexOf(b.unit))
-              .map((u) => (
-                <div key={u.unit} className="rounded-md border bg-white p-3">
-                  <p className="flex items-baseline justify-between text-sm">
-                    <span className="font-medium">{UNIT_LABELS[u.unit] ?? u.unit}</span>
-                    <span className="font-semibold">{u.pctOk.toLocaleString("pt-PT")}% OK</span>
-                  </p>
-                  <div className="mt-2">
-                    <StatusBar counts={u.counts} />
-                  </div>
-                </div>
-              ))}
-          </div>
-
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Todos os sistemas</h2>
           <StatusBoard
             isAdmin={false}
             apiBase="/api/status/shared"

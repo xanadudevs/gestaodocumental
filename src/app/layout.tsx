@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import Navbar from "@/components/Navbar";
+import NavbarGate from "@/components/NavbarGate";
 
 export const metadata: Metadata = {
   title: "Gestão e Suporte DANAD",
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt">
       <body>
         <Providers>
-          <Navbar />
+          <NavbarGate>
+            <Navbar />
+          </NavbarGate>
           <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         </Providers>
       </body>

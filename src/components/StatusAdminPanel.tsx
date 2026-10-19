@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UNIT_LABELS, UNIT_ORDER } from "@/lib/status";
+import { CRITICALITY_LABELS, UNIT_LABELS, UNIT_ORDER } from "@/lib/status";
 import { DANAD_TABLE, parseSystemsTable, type ParseResult } from "@/lib/statusImport";
 
 export default function StatusAdminPanel({ empty, existing }: { empty: boolean; existing: string[] }) {
@@ -196,9 +196,11 @@ export default function StatusAdminPanel({ empty, existing }: { empty: boolean; 
           className="rounded-md border px-2 py-1"
           aria-label="Criticidade"
         >
-          <option value="HIGH">Crítico</option>
-          <option value="MEDIUM">Importante</option>
-          <option value="LOW">Normal</option>
+          {Object.entries(CRITICALITY_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
         </select>
         <button
           disabled={busy}
