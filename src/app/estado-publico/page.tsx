@@ -2,15 +2,40 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { UNIT_LABELS, UNIT_ORDER, loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
+import { isValidStatusToken } from "@/lib/statusPublic";
 import StatusSummaryCards, { StatusBar } from "@/components/StatusSummaryCards";
 import StatusBadge from "@/components/StatusBadge";
 import AutoRefresh from "@/components/AutoRefresh";
 
-export const metadata: Metadata = { title: "Estado dos sistemas DANAD" };
+export const metadata: Metadata = { title: "Estado dos sistemas DANAD", robots: { index: false, follow: false } };
 
-// Página pública (sem login) e só de leitura. Mostra apenas o estado de
+// Página sem login mas protegida por token (?token=...), só de leitura. Mostra apenas o estado de
 // cada sistema: não expõe responsáveis, notas, componentes nem quem alterou.
-export default async function PublicStatusPage() {
+export default async function PublicStatusPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
+  const { token } = await searchParams;
+  if (!isValidStatusToken(token)) {
+    return (
+      <div className="mx-auto max-w-sm">
+        <h1 className="mb-2 text-xl font-semibold">Estado dos sistemas DANAD</h1>
+        <p className="mb-4 text-sm text-gray-500">Indica o token de acesso para ver o estado dos sistemas.</p>
+        <form method="get" className="flex gap-2">
+          <input
+            name="token"
+            type="password"
+            required
+            autoFocus
+            placeholder="Token"
+            className="flex-1 rounded-md border px-3 py-2 text-sm"
+          />
+          <button className="rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700">
+            Ver
+          </button>
+        </form>
+        {token && <p className="mt-2 text-sm text-red-600">Token inválido.</p>}
+      </div>
+    );
+  }
+
   const systems = await loadSystems(prisma);
   const summary = summarize(systems);
   const rank = { DOWN: 0, DEGRADED: 1, UNKNOWN: 2, OK: 3 } as const;

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { canManageUsers } from "@/lib/permissions";
 import { STATUS_LABELS, loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
+import { publicStatusPath } from "@/lib/statusPublic";
 import StatusSummaryCards from "@/components/StatusSummaryCards";
 import StatusBoard from "@/components/StatusBoard";
 import StatusAdminPanel from "@/components/StatusAdminPanel";
@@ -40,10 +41,10 @@ export default async function StatusPage() {
         </div>
         <div className="flex gap-2">
           <Link
-            href="/estado-publico"
+            href={publicStatusPath()}
             target="_blank"
             className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-            title="Vista só de leitura, sem login, para partilhar"
+            title="Vista só de leitura, sem login, protegida por token"
           >
             Página pública ↗
           </Link>

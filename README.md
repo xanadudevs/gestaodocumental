@@ -86,7 +86,9 @@ componentes.
 - **Relatório** (`/estado/relatorio`): resumo por unidade, sistemas que não
   estão OK, por responsável; "Copiar como texto" (para email/chat) e
   imprimir/PDF. `GET /api/status/summary` devolve o mesmo em JSON.
-- **Página pública** (`/estado-publico`): só leitura, **sem login**, atualiza-se
+- **Página pública** (`/estado-publico?token=SPMS%23123`): só leitura, **sem login** mas com
+  token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como `%23` no link, ou
+  escreve-se o token no formulário da página), atualiza-se
   sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
   de cada sistema; não mostra responsáveis, notas, componentes nem quem
   alterou.
