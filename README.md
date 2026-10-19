@@ -119,6 +119,21 @@ componentes.
 > browser. Só é usada no servidor (rotas API), nunca em código do lado do
 > cliente.
 
+### Evitar que o Supabase pause o projeto
+
+Os projetos gratuitos do Supabase pausam após cerca de 7 dias sem
+atividade (e com o projeto pausado a app e o build falham). O
+`vercel.json` define um cron da Vercel que chama `/api/health` todos os
+dias às 06:00 UTC; essa rota faz uma consulta à base de dados, o que conta
+como atividade. Os crons da Vercel só correm no deploy de **produção** e o
+plano gratuito permite um por dia. Os resultados aparecem em Vercel →
+Settings → Cron Jobs. Se o projeto já estiver pausado, é preciso restaurá-lo
+uma vez no Supabase ("Restore project").
+
+Alternativa/reforço: um monitor externo gratuito (ex: UptimeRobot) a chamar
+`https://<o-teu-dominio>/api/health` de 5 em 5 minutos, que também avisa
+quando a app ou a base de dados deixam de responder.
+
 ## 2. Configurar login
 
 Há duas formas de login, podes usar uma ou ambas:
