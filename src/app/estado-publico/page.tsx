@@ -3,38 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import { isValidStatusToken } from "@/lib/statusPublic";
-import StatusOverview from "@/components/StatusOverview";
 import StatusBoard from "@/components/StatusBoard";
 import AutoRefresh from "@/components/AutoRefresh";
+import StatusTabs from "@/components/StatusTabs";
+import StatusTokenGate from "@/components/StatusTokenGate";
+import StatusMiniSummary from "@/components/StatusMiniSummary";
 
 export const metadata: Metadata = { title: "Estado dos sistemas DANAD", robots: { index: false, follow: false } };
 
-// Página sem login mas protegida por token (?token=...), só de leitura. Mostra apenas o estado de
-// cada sistema e dos seus componentes (aplicação, base de dados, serviços):
-// não expõe responsáveis, notas nem quem alterou.
+// Página de submissão, sem login mas protegida por token (?token=...): quem
+// tem o link vê todos os sistemas e atualiza o estado de qualquer um. O
+// relatório está na outra página (/estado-publico/relatorio).
 export default async function PublicStatusPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
   if (!isValidStatusToken(token)) {
-    return (
-      <div className="mx-auto max-w-sm">
-        <h1 className="mb-2 text-xl font-semibold">Estado dos sistemas DANAD</h1>
-        <p className="mb-4 text-sm text-gray-500">Indica o token de acesso para ver e atualizar o estado dos sistemas.</p>
-        <form method="get" className="flex gap-2">
-          <input
-            name="token"
-            type="password"
-            required
-            autoFocus
-            placeholder="Token"
-            className="flex-1 rounded-md border px-3 py-2 text-sm"
-          />
-          <button className="rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700">
-            Entrar
-          </button>
-        </form>
-        {token && <p className="mt-2 text-sm text-red-600">Token inválido.</p>}
-      </div>
-    );
+    return <StatusTokenGate title="Estado dos sistemas DANAD" invalid={!!token} />;
   }
 
   const systems = await loadSystems(prisma);
@@ -44,10 +27,13 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
     <div>
       <AutoRefresh seconds={60} />
       <h1 className="text-xl font-semibold">Estado dos sistemas DANAD</h1>
-      <p className="mb-4 text-sm text-gray-500">
-        Atualizado em {formatDate(summary.generatedAt)} · atualiza-se sozinha · qualquer pessoa com este link pode
-        atualizar o estado: usa &quot;Tudo OK&quot;, &quot;Degradado&quot; ou &quot;Em baixo&quot;, ou abre um sistema para
-        marcar só um componente.
+      <p className="mb-3 text-sm text-gray-500">Atualizado em {formatDate(summary.generatedAt)}</p>
+      <StatusTabs section="submissao" shared={{ token: token! }} />
+
+      <p className="mb-4 text-sm text-gray-600">
+        Atualiza o estado dos sistemas: &quot;Tudo OK&quot;, &quot;Degradado&quot;, &quot;Em baixo&quot; ou &quot;Por
+        verificar&quot;, ou abre um sistema para marcar só um componente. O relatório está no separador
+        &quot;Relatório&quot;.
       </p>
 
       {systems.length === 0 ? (
@@ -56,9 +42,7 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
         </p>
       ) : (
         <>
-          <StatusOverview systems={systems} />
-
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">Todos os sistemas</h2>
+          <StatusMiniSummary summary={summary} />
           <StatusBoard
             isAdmin={false}
             apiBase="/api/status/shared"
