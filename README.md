@@ -86,8 +86,8 @@ componentes.
 - **Relatório na própria página**: `/estado` e a página partilhada abrem com
   o resumo (% OK, contagens), a tabela por unidade e a lista "Prioridade":
   os sistemas que não estão OK **ordenados por impacto** (criticidade ×
-  gravidade: primeiro os críticos em baixo, depois os importantes em baixo e
-  os críticos degradados, ...), com os componentes afetados e o responsável.
+  gravidade: primeiro os de criticidade elevada em baixo, depois os normais
+  em baixo e os elevados degradados, ...), com os componentes afetados e o responsável.
   "Copiar como texto" (para email/chat) e imprimir/PDF. `GET
   /api/status/summary` devolve o mesmo em JSON. Os endereços antigos do
   relatório (`/estado/relatorio`, `/estado-publico/relatorio`) redirecionam.
@@ -106,7 +106,7 @@ componentes.
   estiver vazio, aparece também a importação do Excel (cola as colunas
   Unidade, Colaborador e Função/Responsabilidade; cada responsabilidade
   passa a ser um sistema, com o colaborador como responsável, e há
-  pré-visualização). Dentro de cada sistema define a **Criticidade** e, em
+  pré-visualização). Dentro de cada sistema define a **Criticidade** (Elevado, Normal ou Baixo) e, em
   "Mais opções", acrescenta componentes (também em lote, um por linha) ou
   remove o sistema. O **LIGHT** (uma ULS por componente, 46) e o **PNB** (um
   serviço por componente, 20) ficam assim logo ao importar; as listas estão em

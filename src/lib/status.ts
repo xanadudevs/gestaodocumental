@@ -57,9 +57,9 @@ export const COMPONENT_KIND_LABELS: Record<string, string> = {
 };
 
 export const CRITICALITY_LABELS: Record<string, string> = {
-  HIGH: "Crítico",
-  MEDIUM: "Importante",
-  LOW: "Normal",
+  HIGH: "Elevado",
+  MEDIUM: "Normal",
+  LOW: "Baixo",
 };
 
 // Um estado confirmado há mais do que isto já não é de confiança numa crise.
@@ -210,9 +210,9 @@ export const MANAGE_STATUS_MESSAGE = "Só um Administrador pode gerir o catálog
 const CRITICALITY_WEIGHT: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 const STATUS_WEIGHT: Record<string, number> = { DOWN: 3, DEGRADED: 2, UNKNOWN: 1, OK: 0 };
 
-// Impacto = criticidade × gravidade do estado. Um sistema crítico em baixo
-// (9) vem antes de um importante em baixo (6), de um crítico degradado (6)
-// e de um crítico ainda por verificar (3).
+// Impacto = criticidade (Elevado 3, Normal 2, Baixo 1) × gravidade do estado.
+// Um sistema de criticidade elevada em baixo (9) vem antes de um normal em
+// baixo (6), de um elevado degradado (6) e de um elevado ainda por verificar (3).
 export function impactScore(s: Pick<SystemView, "criticality" | "status">) {
   return (CRITICALITY_WEIGHT[s.criticality] ?? 2) * (STATUS_WEIGHT[s.status] ?? 0);
 }

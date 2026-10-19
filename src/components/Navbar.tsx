@@ -36,12 +36,12 @@ export default async function Navbar() {
 
   return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <Link href="/dashboard" className="text-lg font-semibold text-brand-700">
             Gestão e Suporte DANAD
           </Link>
-          <nav className="flex gap-4 text-sm text-gray-600">
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
             <Link href="/dashboard" className="flex items-center gap-1 hover:text-brand-600">
               Documentos
               {inboxDocuments > 0 && (

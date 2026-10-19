@@ -75,11 +75,11 @@ export default async function StatusOverview({ systems: given }: { systems?: Sys
             <tr>
               <th className="px-3 py-2">Unidade</th>
               <th className="px-3 py-2">% OK</th>
-              <th className="px-3 py-2">OK</th>
-              <th className="px-3 py-2">Degradado</th>
-              <th className="px-3 py-2">Em baixo</th>
-              <th className="px-3 py-2">Por verificar</th>
-              <th className="w-40 px-3 py-2"></th>
+              <th className="hidden px-3 py-2 sm:table-cell">OK</th>
+              <th className="hidden px-3 py-2 sm:table-cell">Degradado</th>
+              <th className="hidden px-3 py-2 sm:table-cell">Em baixo</th>
+              <th className="hidden px-3 py-2 sm:table-cell">Por verificar</th>
+              <th className="w-24 px-3 py-2 sm:w-40"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -87,12 +87,17 @@ export default async function StatusOverview({ systems: given }: { systems?: Sys
               .sort((a, b) => UNIT_ORDER.indexOf(a.unit) - UNIT_ORDER.indexOf(b.unit))
               .map((u) => (
                 <tr key={u.unit}>
-                  <td className="px-3 py-2">{u.label}</td>
+                  <td className="px-3 py-2">
+                    {u.label}
+                    <span className="block text-xs text-gray-500 sm:hidden">
+                      {u.counts.OK} OK · {u.counts.DEGRADED} degr. · {u.counts.DOWN} em baixo · {u.counts.UNKNOWN} por verif.
+                    </span>
+                  </td>
                   <td className="px-3 py-2 font-semibold">{fmt(u.pctOk)}%</td>
-                  <td className="px-3 py-2">{u.counts.OK}</td>
-                  <td className="px-3 py-2">{u.counts.DEGRADED}</td>
-                  <td className="px-3 py-2">{u.counts.DOWN}</td>
-                  <td className="px-3 py-2">{u.counts.UNKNOWN}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">{u.counts.OK}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">{u.counts.DEGRADED}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">{u.counts.DOWN}</td>
+                  <td className="hidden px-3 py-2 sm:table-cell">{u.counts.UNKNOWN}</td>
                   <td className="px-3 py-2">
                     <StatusBar counts={u.counts} />
                   </td>
@@ -104,15 +109,41 @@ export default async function StatusOverview({ systems: given }: { systems?: Sys
 
       <h2 className="text-sm font-semibold text-gray-700">Prioridade: sistemas que não estão OK ({ranked.length})</h2>
       <p className="mb-2 text-xs text-gray-500">
-        Ordenados por impacto (criticidade × gravidade): primeiro os críticos em baixo, depois os importantes em
-        baixo e os críticos degradados, e assim por diante. Os por verificar vêm no fim de cada nível.
+        Ordenados por impacto (criticidade Elevado, Normal ou Baixo × gravidade): primeiro os de criticidade
+        elevada em baixo, depois os normais em baixo e os elevados degradados, e assim por diante. Os por
+        verificar vêm no fim de cada nível.
       </p>
       {ranked.length === 0 ? (
         <p className="mb-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           Todos os sistemas estão OK.
         </p>
       ) : (
-        <div className="mb-6 overflow-x-auto rounded-md border bg-white">
+        <>
+        <ul className="mb-6 space-y-2 sm:hidden">
+          {ranked.map((s, i) => {
+            const parts = affectedParts(s);
+            return (
+              <li key={s.id} className="rounded-md border bg-white p-3 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-medium">
+                    <span className="mr-1.5 text-gray-400">{i + 1}.</span>
+                    {s.name}
+                  </span>
+                  <StatusBadge status={s.status} />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Criticidade {CRITICALITY_LABELS[s.criticality] ?? s.criticality}
+                  {s.ownerName ? ` · ${s.ownerName}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-gray-600">
+                  {parts.length} de {s.components.length} componentes: {parts.slice(0, MAX_SHOWN).join("; ")}
+                  {parts.length > MAX_SHOWN && ` … +${parts.length - MAX_SHOWN}`}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mb-6 hidden overflow-x-auto rounded-md border bg-white sm:block">
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
               <tr>
@@ -157,6 +188,7 @@ export default async function StatusOverview({ systems: given }: { systems?: Sys
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

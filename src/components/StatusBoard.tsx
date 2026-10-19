@@ -138,7 +138,7 @@ export default function StatusBoard({
     .filter((g) => g.items.length > 0);
 
   const chip = (active: boolean) =>
-    `rounded-full px-3 py-1 text-xs ${active ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`;
+    `rounded-full px-3 py-1.5 text-xs sm:py-1 ${active ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`;
   const filters: { key: Filter; label: string }[] = [
     { key: "ALL", label: "Todos" },
     { key: "PROBLEMS", label: "Com problemas" },
@@ -157,7 +157,7 @@ export default function StatusBoard({
         <select
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
-          className="rounded-md border px-2 py-1 text-xs"
+          className="w-full rounded-md border px-2 py-2 text-base sm:w-auto sm:py-1 sm:text-xs"
           aria-label="Unidade"
         >
           <option value="">Todas as unidades</option>
@@ -171,7 +171,7 @@ export default function StatusBoard({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Procurar sistema ou responsável"
-          className="min-w-[14rem] flex-1 rounded-md border px-2 py-1 text-xs"
+          className="w-full rounded-md border px-2 py-2 text-base sm:min-w-[14rem] sm:flex-1 sm:py-1 sm:text-xs"
         />
       </div>
 
@@ -203,7 +203,7 @@ export default function StatusBoard({
                       <span>
                         <span className="font-medium">{s.name}</span>
                         {s.criticality === "HIGH" && (
-                          <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">Crítico</span>
+                          <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">Criticidade elevada</span>
                         )}
                         {s.stale && (
                           <span
@@ -220,13 +220,13 @@ export default function StatusBoard({
                       </span>
                     </button>
                     <StatusBadge status={s.status} />
-                    <div className="flex overflow-hidden rounded-md border text-xs" role="group" aria-label={`Estado de ${s.name}`}>
+                    <div className="flex w-full overflow-hidden rounded-md border text-xs sm:w-auto" role="group" aria-label={`Estado de ${s.name}`}>
                       {ACTIONS.map((a) => (
                         <button
                           key={a}
                           disabled={busy === s.id || s.components.length === 0}
                           onClick={() => call(s.id, `${apiBase}/systems/${s.id}/set-all`, "POST", { status: a })}
-                          className={`px-2.5 py-1.5 font-medium disabled:opacity-50 ${
+                          className={`flex-1 px-1.5 py-2.5 font-medium disabled:opacity-50 sm:flex-none sm:px-2.5 sm:py-1.5 ${
                             s.status === a && s.components.every((c) => c.status === a)
                               ? BUTTON_STYLES[a].on
                               : BUTTON_STYLES[a].off
@@ -282,7 +282,7 @@ export default function StatusBoard({
                             {c.name}
                             <span className="block text-xs text-gray-400">{COMPONENT_KIND_LABELS[c.kind] ?? c.kind}</span>
                           </span>
-                          <div className="flex overflow-hidden rounded-md border text-xs">
+                          <div className="flex w-full overflow-hidden rounded-md border text-xs sm:w-auto">
                             {ACTIONS.map((a) => (
                               <button
                                 key={a}
@@ -293,7 +293,7 @@ export default function StatusBoard({
                                     note: notes[c.id] ?? c.note ?? undefined,
                                   })
                                 }
-                                className={`px-2.5 py-1 disabled:opacity-50 ${c.status === a ? BUTTON_STYLES[a].on : BUTTON_STYLES[a].off}`}
+                                className={`flex-1 px-1.5 py-2 disabled:opacity-50 sm:flex-none sm:px-2.5 sm:py-1 ${c.status === a ? BUTTON_STYLES[a].on : BUTTON_STYLES[a].off}`}
                               >
                                 {STATUS_LABELS[a]}
                               </button>
@@ -312,7 +312,7 @@ export default function StatusBoard({
                               }
                             }}
                             placeholder="Nota (ex: previsão de resolução)"
-                            className="min-w-[10rem] flex-1 rounded-md border px-2 py-1 text-xs"
+                            className="w-full min-w-0 rounded-md border px-2 py-2 text-base sm:min-w-[10rem] sm:flex-1 sm:py-1 sm:text-xs"
                           />
                           <span className={`text-xs ${c.stale ? "text-amber-700" : "text-gray-400"}`}>
                             {c.status === "UNKNOWN" ? "por verificar" : ago(c.statusAt)}
@@ -363,7 +363,7 @@ function AdminSystemControls({
   const [replace, setReplace] = useState(false);
   return (
     <div className="space-y-2 rounded-md bg-gray-50 p-2 text-xs">
-      <label className="flex items-center gap-2 text-gray-600" title="Os sistemas críticos aparecem destacados na lista e no relatório">
+      <label className="flex items-center gap-2 text-gray-600" title="Define o impacto: os sistemas de criticidade elevada aparecem primeiro na lista Prioridade">
         <span className="font-medium">Criticidade</span>
         <select
           value={system.criticality}
@@ -470,7 +470,7 @@ function BulkBar({
   const shown = system.components.filter((c) => c.name.toLowerCase().includes(filter.trim().toLowerCase()));
   const allShownPicked = shown.length > 0 && shown.every((c) => picked.has(c.id));
   return (
-    <div className="sticky top-0 z-10 space-y-2 rounded-md border bg-gray-50 p-2 text-xs">
+    <div className="space-y-2 rounded-md border bg-gray-50 p-2 text-xs sm:sticky sm:top-0 sm:z-10">
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1.5 font-medium text-gray-700">
           <input
@@ -491,7 +491,7 @@ function BulkBar({
           value={filter}
           onChange={(e) => onFilter(e.target.value)}
           placeholder="Filtrar por nome"
-          className="min-w-[10rem] flex-1 rounded-md border px-2 py-1"
+          className="w-full rounded-md border px-2 py-2 text-base sm:min-w-[10rem] sm:flex-1 sm:py-1 sm:text-xs"
         />
         <span className="text-gray-500">
           {picked.size} de {system.components.length} selecionados
@@ -500,13 +500,13 @@ function BulkBar({
       {picked.size > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-gray-700">Marcar selecionados como:</span>
-          <div className="flex overflow-hidden rounded-md border bg-white">
+          <div className="flex w-full overflow-hidden rounded-md border bg-white sm:w-auto">
             {ACTIONS.map((a) => (
               <button
                 key={a}
                 disabled={busy}
                 onClick={() => onApply(a)}
-                className={`px-2.5 py-1 font-medium disabled:opacity-50 ${BUTTON_STYLES[a].off}`}
+                className={`flex-1 px-1.5 py-2 font-medium disabled:opacity-50 sm:flex-none sm:px-2.5 sm:py-1 ${BUTTON_STYLES[a].off}`}
               >
                 {STATUS_LABELS[a]}
               </button>
@@ -516,7 +516,7 @@ function BulkBar({
             value={note}
             onChange={(e) => onNote(e.target.value)}
             placeholder="Nota (opcional)"
-            className="min-w-[10rem] flex-1 rounded-md border px-2 py-1"
+            className="w-full rounded-md border px-2 py-2 text-base sm:min-w-[10rem] sm:flex-1 sm:py-1 sm:text-xs"
           />
           <button onClick={() => onPick(new Set())} className="text-gray-500 hover:underline">
             Limpar seleção
