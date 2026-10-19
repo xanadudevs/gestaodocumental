@@ -1,6 +1,14 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { STATUS_LABELS, UNIT_ORDER, loadSystems, summarize, type SystemView } from "@/lib/status";
+import {
+  CRITICALITY_LABELS,
+  STATUS_LABELS,
+  UNIT_ORDER,
+  loadSystems,
+  summarize,
+  systemsByImpact,
+  type StatusSummary,
+  type SystemView,
+} from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import StatusSummaryCards, { StatusBar } from "@/components/StatusSummaryCards";
 import StatusBadge from "@/components/StatusBadge";
@@ -8,15 +16,15 @@ import CopyReportButton from "@/components/CopyReportButton";
 import PrintButton from "@/components/PrintButton";
 
 const fmt = (n: number) => n.toLocaleString("pt-PT");
+const MAX_SHOWN = 4;
 
-function problemLine(s: SystemView) {
-  const parts = s.components
+function affectedParts(s: SystemView) {
+  return s.components
     .filter((c) => c.status !== "OK")
     .map((c) => `${c.name}: ${STATUS_LABELS[c.status].toLowerCase()}${c.note ? ` (${c.note})` : ""}`);
-  return `- ${s.name}${s.ownerName ? ` [${s.ownerName}]` : ""} — ${STATUS_LABELS[s.status]}${parts.length ? ` · ${parts.join("; ")}` : ""}`;
 }
 
-function buildText(systems: SystemView[], summary: ReturnType<typeof summarize>) {
+function buildText(ranked: SystemView[], summary: StatusSummary) {
   const { systems: c } = summary;
   const lines = [
     `Estado dos sistemas DANAD — ${formatDate(summary.generatedAt)}`,
@@ -30,39 +38,33 @@ function buildText(systems: SystemView[], summary: ReturnType<typeof summarize>)
       (u) => `- ${u.unit}: ${fmt(u.pctOk)}% OK (${u.counts.OK}/${u.counts.total}); ${u.counts.DOWN} em baixo, ${u.counts.DEGRADED} degradados, ${u.counts.UNKNOWN} por verificar`
     ),
   ];
-  const down = systems.filter((s) => s.status === "DOWN");
-  const degraded = systems.filter((s) => s.status === "DEGRADED");
-  const unknown = systems.filter((s) => s.status === "UNKNOWN");
-  if (down.length) lines.push("", "Em baixo:", ...down.map(problemLine));
-  if (degraded.length) lines.push("", "Degradados:", ...degraded.map(problemLine));
-  if (unknown.length) lines.push("", `Por verificar: ${unknown.map((s) => s.name).join(", ")}`);
+  if (ranked.length) {
+    lines.push("", "Prioridade (por impacto = criticidade × gravidade):");
+    ranked.forEach((s, i) => {
+      const parts = affectedParts(s);
+      const shown = parts.slice(0, MAX_SHOWN).join("; ") + (parts.length > MAX_SHOWN ? `; +${parts.length - MAX_SHOWN}` : "");
+      lines.push(
+        `${i + 1}. ${s.name} — ${STATUS_LABELS[s.status]} · ${CRITICALITY_LABELS[s.criticality] ?? s.criticality}${s.ownerName ? ` · ${s.ownerName}` : ""}${shown ? ` · ${shown}` : ""}`
+      );
+    });
+  }
   return lines.join("\n");
 }
 
-// Relatório de estado dos sistemas, partilhado entre a página com login
-// (/estado/relatorio) e a página com token (/estado-publico/relatorio).
-export default async function StatusReportView({ backHref }: { backHref: string }) {
-  const systems = await loadSystems(prisma);
+// Resumo e relatório do estado dos sistemas, para pôr no topo da página de
+// estado (a de /estado e a partilhada): totais, por unidade e a lista de
+// sistemas que não estão OK ordenada por impacto.
+export default async function StatusOverview({ systems: given }: { systems?: SystemView[] }) {
+  const systems = given ?? (await loadSystems(prisma));
   const summary = summarize(systems);
-  const order = (s: SystemView) => ({ DOWN: 0, DEGRADED: 1, UNKNOWN: 2, OK: 3 })[s.status];
-  const notOk = systems.filter((s) => s.status !== "OK").sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
-  const owners = new Map<string, number>();
-  for (const s of notOk) owners.set(s.ownerName ?? "Sem responsável", (owners.get(s.ownerName ?? "Sem responsável") ?? 0) + 1);
+  const ranked = systemsByImpact(systems);
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href={backHref} className="text-sm text-brand-700 hover:underline">
-          ← Estado dos sistemas
-        </Link>
-        <div className="flex gap-2">
-          <CopyReportButton text={buildText(systems, summary)} />
-          <PrintButton />
-        </div>
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-2 print:hidden">
+        <CopyReportButton text={buildText(ranked, summary)} />
+        <PrintButton />
       </div>
-
-      <h1 className="text-xl font-semibold">Relatório de estado dos sistemas DANAD</h1>
-      <p className="mb-4 text-sm text-gray-500">Gerado em {formatDate(summary.generatedAt)}</p>
 
       <StatusSummaryCards summary={summary} />
 
@@ -100,10 +102,12 @@ export default async function StatusReportView({ backHref }: { backHref: string 
         </table>
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold text-gray-700">
-        Sistemas que não estão OK ({notOk.length})
-      </h2>
-      {notOk.length === 0 ? (
+      <h2 className="text-sm font-semibold text-gray-700">Prioridade: sistemas que não estão OK ({ranked.length})</h2>
+      <p className="mb-2 text-xs text-gray-500">
+        Ordenados por impacto (criticidade × gravidade): primeiro os críticos em baixo, depois os importantes em
+        baixo e os críticos degradados, e assim por diante. Os por verificar vêm no fim de cada nível.
+      </p>
+      {ranked.length === 0 ? (
         <p className="mb-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           Todos os sistemas estão OK.
         </p>
@@ -112,42 +116,47 @@ export default async function StatusReportView({ backHref }: { backHref: string 
           <table className="w-full text-sm">
             <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
               <tr>
+                <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">Sistema</th>
+                <th className="px-3 py-2">Criticidade</th>
                 <th className="px-3 py-2">Estado</th>
                 <th className="px-3 py-2">Componentes afetados</th>
                 <th className="px-3 py-2">Responsável</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {notOk.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-3 py-2 font-medium">
-                    {s.name}
-                    {s.criticality === "HIGH" && (
-                      <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-xs font-normal text-red-700">Crítico</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={s.status} />
-                  </td>
-                  <td className="px-3 py-2 text-gray-600">
-                    {s.components
-                      .filter((c) => c.status !== "OK")
-                      .map((c) => `${c.name} (${STATUS_LABELS[c.status].toLowerCase()}${c.note ? `: ${c.note}` : ""})`)
-                      .join("; ")}
-                  </td>
-                  <td className="px-3 py-2 text-gray-600">{s.ownerName ?? "—"}</td>
-                </tr>
-              ))}
+              {ranked.map((s, i) => {
+                const parts = affectedParts(s);
+                return (
+                  <tr key={s.id}>
+                    <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                    <td className="px-3 py-2 font-medium">{s.name}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs ${
+                          s.criticality === "HIGH" ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {CRITICALITY_LABELS[s.criticality] ?? s.criticality}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <StatusBadge status={s.status} />
+                    </td>
+                    <td className="px-3 py-2 text-gray-600">
+                      <span className="text-xs text-gray-400">
+                        {parts.length} de {s.components.length}
+                      </span>{" "}
+                      {parts.slice(0, MAX_SHOWN).join("; ")}
+                      {parts.length > MAX_SHOWN && ` … +${parts.length - MAX_SHOWN}`}
+                    </td>
+                    <td className="px-3 py-2 text-gray-600">{s.ownerName ?? "—"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      )}
-
-      {owners.size > 0 && (
-        <p className="text-sm text-gray-500">
-          Por responsável: {[...owners.entries()].map(([name, n]) => `${name} (${n})`).join(" · ")}
-        </p>
       )}
     </div>
   );

@@ -204,3 +204,31 @@ export function summarize(systems: SystemView[], now = new Date()): StatusSummar
 }
 
 export const MANAGE_STATUS_MESSAGE = "Só um Administrador pode gerir o catálogo de sistemas";
+
+// --- Prioridade por impacto ---
+
+const CRITICALITY_WEIGHT: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+const STATUS_WEIGHT: Record<string, number> = { DOWN: 3, DEGRADED: 2, UNKNOWN: 1, OK: 0 };
+
+// Impacto = criticidade × gravidade do estado. Um sistema crítico em baixo
+// (9) vem antes de um importante em baixo (6), de um crítico degradado (6)
+// e de um crítico ainda por verificar (3).
+export function impactScore(s: Pick<SystemView, "criticality" | "status">) {
+  return (CRITICALITY_WEIGHT[s.criticality] ?? 2) * (STATUS_WEIGHT[s.status] ?? 0);
+}
+
+// Sistemas que não estão OK, do maior para o menor impacto; em empate, o
+// estado mais grave, a criticidade mais alta, mais componentes afetados e o nome.
+export function systemsByImpact(systems: SystemView[]): SystemView[] {
+  const affected = (s: SystemView) => s.components.filter((c) => c.status !== "OK").length;
+  return systems
+    .filter((s) => s.status !== ServiceStatus.OK)
+    .sort(
+      (a, b) =>
+        impactScore(b) - impactScore(a) ||
+        (STATUS_WEIGHT[b.status] ?? 0) - (STATUS_WEIGHT[a.status] ?? 0) ||
+        (CRITICALITY_WEIGHT[b.criticality] ?? 2) - (CRITICALITY_WEIGHT[a.criticality] ?? 2) ||
+        affected(b) - affected(a) ||
+        a.name.localeCompare(b.name)
+    );
+}

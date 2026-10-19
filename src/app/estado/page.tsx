@@ -4,13 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageUsers } from "@/lib/permissions";
-import { STATUS_LABELS, loadSystems, summarize } from "@/lib/status";
+import { STATUS_LABELS, loadSystems } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import { publicStatusPath } from "@/lib/statusPublic";
-import StatusSummaryCards from "@/components/StatusSummaryCards";
+import StatusOverview from "@/components/StatusOverview";
 import StatusBoard from "@/components/StatusBoard";
 import StatusAdminPanel from "@/components/StatusAdminPanel";
-import StatusBadge from "@/components/StatusBadge";
 
 export default async function StatusPage() {
   const session = await getServerSession(authOptions);
@@ -26,8 +25,6 @@ export default async function StatusPage() {
       include: { system: { select: { name: true } } },
     }),
   ]);
-  const summary = summarize(systems, now);
-  const problems = systems.filter((s) => s.status === "DOWN" || s.status === "DEGRADED");
 
   return (
     <div>
@@ -44,42 +41,16 @@ export default async function StatusPage() {
             href={publicStatusPath()}
             target="_blank"
             className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-            title="Vista só de leitura, sem login, protegida por token"
+            title="Página sem login, protegida por token, para os gestores"
           >
-            Página pública ↗
-          </Link>
-          <Link
-            href="/estado/relatorio"
-            className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-          >
-            Relatório
+            Página partilhada ↗
           </Link>
         </div>
       </div>
 
-      <StatusSummaryCards summary={summary} />
+      <StatusOverview systems={systems} />
 
-      {problems.length > 0 && (
-        <div className="mb-5 rounded-md border border-red-200 bg-red-50 p-3">
-          <h2 className="mb-2 text-sm font-semibold text-red-800">Atenção ({problems.length})</h2>
-          <ul className="space-y-1 text-sm">
-            {problems
-              .sort((a, b) => (a.status === b.status ? 0 : a.status === "DOWN" ? -1 : 1))
-              .map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status={s.status} />
-                  <span className="font-medium">{s.name}</span>
-                  <span className="text-gray-600">
-                    {s.components
-                      .filter((c) => c.status === "DOWN" || c.status === "DEGRADED")
-                      .map((c) => `${c.name}${c.note ? ` (${c.note})` : ""}`)
-                      .join(", ")}
-                  </span>
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
+      <h2 className="mb-2 text-sm font-semibold text-gray-700">Todos os sistemas</h2>
 
       {isAdmin && <StatusAdminPanel empty={systems.length === 0} existing={systems.map((s) => s.name)} />}
 
