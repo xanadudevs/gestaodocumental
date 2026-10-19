@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { UNIT_LABELS, UNIT_ORDER, loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
+import Link from "next/link";
 import { isValidStatusToken } from "@/lib/statusPublic";
 import StatusSummaryCards, { StatusBar } from "@/components/StatusSummaryCards";
 import StatusBoard from "@/components/StatusBoard";
@@ -43,7 +44,15 @@ export default async function PublicStatusPage({ searchParams }: { searchParams:
   return (
     <div>
       <AutoRefresh seconds={60} />
-      <h1 className="text-xl font-semibold">Estado dos sistemas DANAD</h1>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h1 className="text-xl font-semibold">Estado dos sistemas DANAD</h1>
+        <Link
+          href={`/estado-publico/relatorio?token=${encodeURIComponent(token!)}`}
+          className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        >
+          Relatório
+        </Link>
+      </div>
       <p className="mb-4 text-sm text-gray-500">
         Atualizado em {formatDate(summary.generatedAt)} · atualiza-se sozinha · qualquer pessoa com este link pode
         atualizar o estado: usa &quot;Tudo OK&quot;, &quot;Degradado&quot; ou &quot;Em baixo&quot;, ou abre um sistema para

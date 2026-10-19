@@ -89,7 +89,8 @@ componentes.
 - **Página partilhada** (`/estado-publico?token=SPMS%23123`): **sem login**,
   protegida por token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como
   `%23` no link, ou escreve-se o token no formulário da página). Quem tem o
-  link vê **e atualiza** o estado de todos os sistemas e componentes; Atualiza-se sozinha de minuto a minuto.
+  link vê **e atualiza** o estado de todos os sistemas e componentes. O botão **Relatório** abre o relatório (`/estado-publico/relatorio?token=...`),
+  também sem login. Atualiza-se sozinha de minuto a minuto.
   Não há contas nem links por pessoa: tratar o link como uma password.
 - **Vários componentes de uma vez**: nos sistemas com muitos componentes (LIGHT por
   ULS, PNB por serviço) cada componente tem uma caixa de seleção, com
