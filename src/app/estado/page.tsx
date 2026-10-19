@@ -38,12 +38,22 @@ export default async function StatusPage() {
             O estado do sistema é o pior dos seus componentes.
           </p>
         </div>
-        <Link
-          href="/estado/relatorio"
-          className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-        >
-          Relatório
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/estado-publico"
+            target="_blank"
+            className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+            title="Vista só de leitura, sem login, para partilhar"
+          >
+            Página pública ↗
+          </Link>
+          <Link
+            href="/estado/relatorio"
+            className="rounded-md border px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            Relatório
+          </Link>
+        </div>
       </div>
 
       <StatusSummaryCards summary={summary} />

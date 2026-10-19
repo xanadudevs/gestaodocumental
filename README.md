@@ -86,6 +86,10 @@ componentes.
 - **Relatório** (`/estado/relatorio`): resumo por unidade, sistemas que não
   estão OK, por responsável; "Copiar como texto" (para email/chat) e
   imprimir/PDF. `GET /api/status/summary` devolve o mesmo em JSON.
+- **Página pública** (`/estado-publico`): só leitura, **sem login**, atualiza-se
+  sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
+  de cada sistema; não mostra responsáveis, notas, componentes nem quem
+  alterou.
 - **Administrador**: "Carregar catálogo DANAD" cria os sistemas da tabela de
   responsáveis (`SYSTEM_CATALOG` em `src/lib/status.ts`; só entram sistemas,
   não funções como assessoria ou conformidade); define a criticidade de cada
