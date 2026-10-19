@@ -8,9 +8,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const parsed = await parseSharedUpdate(req);
   if ("error" in parsed) return parsed.error;
   const { id } = await params;
-  const { status, note, actor } = parsed.data;
+  const { status, note } = parsed.data;
 
-  const result = await updateComponent(prisma, id, status, note, { id: null, name: actor });
+  const result = await updateComponent(prisma, id, status, note, { id: null, name: "Página partilhada" });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ id, status });
 }
