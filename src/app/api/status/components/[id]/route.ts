@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { SERVICE_STATUSES } from "@/lib/status";
+import { updateComponent } from "@/lib/statusUpdate";
 import { badRequest, requireAdmin, requireUser } from "@/lib/statusApi";
 
 const schema = z.object({
@@ -18,36 +19,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const parsed = schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return badRequest("Estado inválido");
 
-  const component = await prisma.statusComponent.findUnique({ where: { id } });
-  if (!component) return NextResponse.json({ error: "Componente não encontrado" }, { status: 404 });
-
-  const actorName = auth.session.user.name ?? auth.session.user.email ?? null;
-  // Sem nota nova, uma nota antiga de "em baixo" não deve sobreviver a um OK.
-  const note = parsed.data.note !== undefined ? parsed.data.note || null : parsed.data.status === "OK" ? null : component.note;
-
-  const [updated] = await prisma.$transaction([
-    prisma.statusComponent.update({
-      where: { id },
-      data: {
-        status: parsed.data.status,
-        note,
-        statusAt: new Date(),
-        statusById: auth.session.user.id,
-        statusByName: actorName,
-      },
-    }),
-    prisma.statusEvent.create({
-      data: {
-        systemId: component.systemId,
-        componentName: component.name,
-        fromStatus: component.status,
-        toStatus: parsed.data.status,
-        note: note ?? undefined,
-        actorName,
-      },
-    }),
-  ]);
-  return NextResponse.json({ id: updated.id, status: updated.status });
+  const result = await updateComponent(prisma, id, parsed.data.status, parsed.data.note, {
+    id: auth.session.user.id,
+    name: auth.session.user.name ?? auth.session.user.email ?? null,
+  });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  return NextResponse.json({ id, status: parsed.data.status });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

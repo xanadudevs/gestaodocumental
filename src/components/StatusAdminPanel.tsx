@@ -151,7 +151,7 @@ export default function StatusAdminPanel({ empty, existing }: { empty: boolean; 
                   onClick={async () => {
                     const items = preview.items.filter((i) => chosen.has(i.name));
                     if (
-                      await run("/api/status/import", { items }, (d) => `${d.created} sistemas criados, ${d.updated} atualizados.`)
+                      await run("/api/status/import", { items }, (d) => `${d.created} sistemas criados, ${d.updated} atualizados${d.broken ? `; LIGHT/PNB com um componente por ULS/serviço` : ""}.`)
                     ) {
                       setPreview(null);
                       setTable("");

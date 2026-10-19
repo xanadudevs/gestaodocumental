@@ -15,3 +15,7 @@ export function isValidStatusToken(candidate: string | undefined) {
 export function publicStatusPath() {
   return `/estado-publico?token=${encodeURIComponent(STATUS_PUBLIC_TOKEN)}`;
 }
+
+// Escritas feitas a partir da página com token (sem login): o token vem no
+// cabeçalho x-status-token e o nome de quem atualiza vem no corpo.
+export const STATUS_TOKEN_HEADER = "x-status-token";

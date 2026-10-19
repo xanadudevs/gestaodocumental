@@ -40,6 +40,8 @@ export const ComponentKind = {
   SERVICE: "SERVICE",
   INTEGRATION: "INTEGRATION",
   INFRA: "INFRA",
+  ULS: "ULS",
+  SERVICE_UNIT: "SERVICE_UNIT",
   OTHER: "OTHER",
 } as const;
 
@@ -49,6 +51,8 @@ export const COMPONENT_KIND_LABELS: Record<string, string> = {
   SERVICE: "Serviço / API",
   INTEGRATION: "Integração",
   INFRA: "Infraestrutura",
+  ULS: "ULS",
+  SERVICE_UNIT: "Serviço",
   OTHER: "Outro",
 };
 
