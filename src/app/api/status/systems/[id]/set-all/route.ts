@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { SERVICE_STATUSES } from "@/lib/status";
+import { setAllComponents } from "@/lib/statusUpdate";
 import { badRequest, requireUser } from "@/lib/statusApi";
 
 const schema = z.object({
@@ -19,32 +20,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return badRequest("Estado inválido");
 
-  const components = await prisma.statusComponent.findMany({ where: { systemId: id } });
-  if (components.length === 0) return badRequest("O sistema não tem componentes");
-
-  const actorName = auth.session.user.name ?? auth.session.user.email ?? null;
-  const note = parsed.data.status === "OK" ? null : parsed.data.note || null;
-  const now = new Date();
-
-  await prisma.$transaction([
-    ...components.map((c) =>
-      prisma.statusComponent.update({
-        where: { id: c.id },
-        data: { status: parsed.data.status, note, statusAt: now, statusById: auth.session.user.id, statusByName: actorName },
-      })
-    ),
-    ...components.map((c) =>
-      prisma.statusEvent.create({
-        data: {
-          systemId: id,
-          componentName: c.name,
-          fromStatus: c.status,
-          toStatus: parsed.data.status,
-          note: note ?? undefined,
-          actorName,
-        },
-      })
-    ),
-  ]);
+  const result = await setAllComponents(prisma, id, parsed.data.status, parsed.data.note, {
+    id: auth.session.user.id,
+    name: auth.session.user.name ?? auth.session.user.email ?? null,
+  });
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json({ id, status: parsed.data.status });
 }

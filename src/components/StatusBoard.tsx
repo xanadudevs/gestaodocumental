@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge";
 import {
@@ -51,7 +51,21 @@ function ago(iso: string) {
   return `há ${Math.floor(h / 24)} d`;
 }
 
-export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem[]; isAdmin: boolean }) {
+export default function StatusBoard({
+  systems,
+  isAdmin,
+  apiBase = "/api/status",
+  shared,
+}: {
+  systems: BoardSystem[];
+  isAdmin: boolean;
+  // Prefixo das rotas de atualização: o dos utilizadores com login, ou o do
+  // link pessoal de um gestor (/api/status/owner/<token>).
+  apiBase?: string;
+  // Página partilhada (sem login): as atualizações levam o token e o nome
+  // de quem atualiza, que fica no histórico.
+  shared?: { token: string };
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("ALL");
   const [unit, setUnit] = useState("");
@@ -60,15 +74,28 @@ export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [actor, setActor] = useState("");
+  useEffect(() => {
+    try {
+      setActor(localStorage.getItem("status-actor") ?? "");
+    } catch {}
+  }, []);
 
   async function call(key: string, url: string, method: string, body?: unknown) {
+    if (shared && method !== "DELETE" && !actor.trim()) {
+      setError("Indica primeiro o teu nome (em cima), para ficar no histórico.");
+      return;
+    }
     setBusy(key);
     setError("");
     try {
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        headers: { "Content-Type": "application/json", ...(shared ? { "x-status-token": shared.token } : {}) },
+        body:
+          body === undefined
+            ? undefined
+            : JSON.stringify(shared ? { ...(body as object), actor: actor.trim() } : body),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Erro ao guardar");
       router.refresh();
@@ -115,6 +142,25 @@ export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem
 
   return (
     <div>
+      {shared && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-white p-3 text-sm">
+          <label htmlFor="status-actor" className="font-medium">
+            O teu nome
+          </label>
+          <input
+            id="status-actor"
+            value={actor}
+            onChange={(e) => {
+              setActor(e.target.value);
+              try {
+                localStorage.setItem("status-actor", e.target.value);
+              } catch {}
+            }}
+            placeholder="Para ficar registado quem atualizou"
+            className="min-w-[14rem] flex-1 rounded-md border px-2 py-1"
+          />
+        </div>
+      )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {filters.map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)} className={chip(filter === f.key)}>
@@ -192,7 +238,7 @@ export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem
                         <button
                           key={a}
                           disabled={busy === s.id || s.components.length === 0}
-                          onClick={() => call(s.id, `/api/status/systems/${s.id}/set-all`, "POST", { status: a })}
+                          onClick={() => call(s.id, `${apiBase}/systems/${s.id}/set-all`, "POST", { status: a })}
                           className={`px-2.5 py-1.5 font-medium disabled:opacity-50 ${
                             s.status === a && s.components.every((c) => c.status === a)
                               ? BUTTON_STYLES[a].on
@@ -223,7 +269,7 @@ export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem
                                 key={a}
                                 disabled={busy === c.id}
                                 onClick={() =>
-                                  call(c.id, `/api/status/components/${c.id}`, "PATCH", {
+                                  call(c.id, `${apiBase}/components/${c.id}`, "PATCH", {
                                     status: a,
                                     note: notes[c.id] ?? c.note ?? undefined,
                                   })
@@ -240,7 +286,7 @@ export default function StatusBoard({ systems, isAdmin }: { systems: BoardSystem
                             onChange={(e) => setNotes((n) => ({ ...n, [c.id]: e.target.value }))}
                             onBlur={(e) => {
                               if (e.target.value !== (c.note ?? "") && c.status !== "UNKNOWN") {
-                                call(c.id, `/api/status/components/${c.id}`, "PATCH", {
+                                call(c.id, `${apiBase}/components/${c.id}`, "PATCH", {
                                   status: c.status,
                                   note: e.target.value,
                                 });
@@ -294,6 +340,8 @@ function AdminSystemControls({
 }) {
   const [name, setName] = useState("");
   const [kind, setKind] = useState("SERVICE");
+  const [batch, setBatch] = useState("");
+  const [replace, setReplace] = useState(false);
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md bg-gray-50 p-2 text-xs">
       <span className="text-gray-500">Administração:</span>
@@ -333,6 +381,34 @@ function AdminSystemControls({
       >
         + Componente
       </button>
+      <div className="w-full">
+        <textarea
+          value={batch}
+          onChange={(e) => setBatch(e.target.value)}
+          rows={3}
+          placeholder={"Vários componentes de uma vez, um por linha (ex: uma ULS por linha, ou um serviço por linha).\nUsa o tipo escolhido acima (ULS, Serviço, ...)."}
+          className="w-full rounded-md border px-2 py-1"
+        />
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 text-gray-600">
+            <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+            Substituir os componentes atuais
+          </label>
+          <button
+            disabled={busy || !batch.trim()}
+            onClick={() => {
+              const names = batch.split(/\r?\n/).map((n) => n.trim()).filter(Boolean);
+              if (replace && !confirm(`Apagar os componentes atuais de "${system.name}" e criar ${names.length} novos?`)) return;
+              onCall(`/api/status/systems/${system.id}/components`, "POST", { names, kind, replace });
+              setBatch("");
+              setReplace(false);
+            }}
+            className="rounded-md bg-brand-600 px-2.5 py-1 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            Criar em lote
+          </button>
+        </div>
+      </div>
       <button
         disabled={busy}
         onClick={() => confirm(`Remover o sistema "${system.name}" e o seu histórico?`) && onCall(`/api/status/systems/${system.id}`, "DELETE")}

@@ -86,19 +86,20 @@ componentes.
 - **Relatório** (`/estado/relatorio`): resumo por unidade, sistemas que não
   estão OK, por responsável; "Copiar como texto" (para email/chat) e
   imprimir/PDF. `GET /api/status/summary` devolve o mesmo em JSON.
-- **Página pública** (`/estado-publico?token=SPMS%23123`): só leitura, **sem login** mas com
-  token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como `%23` no link, ou
-  escreve-se o token no formulário da página), atualiza-se
-  sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
-  de cada sistema e dos seus componentes (aplicação, base de dados,
-  serviços); não mostra responsáveis, notas nem quem alterou.
+- **Página partilhada** (`/estado-publico?token=SPMS%23123`): **sem login**,
+  protegida por token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como
+  `%23` no link, ou escreve-se o token no formulário da página). Quem tem o
+  link vê **e atualiza** o estado de todos os sistemas e componentes; diz o
+  seu nome, que fica no histórico. Atualiza-se sozinha de minuto a minuto.
+  Não há contas nem links por pessoa: tratar o link como uma password.
 - **Administrador**: importa os sistemas do Excel (cola as colunas Unidade,
   Colaborador e Função/Responsabilidade; cada responsabilidade passa a ser um
   sistema, com o colaborador como responsável, e há pré-visualização para
   desmarcar o que não é sistema; "Usar a tabela DANAD" preenche a tabela
   atual). Reimportar atualiza unidade e responsável sem mexer no estado.
   Também define a criticidade de cada sistema, acrescenta/remove sistemas e
-  componentes, e faz uma **nova ronda** (tudo volta a "Por verificar" e a
+  componentes, e pode criar vários componentes de uma vez (ex: o LIGHT com uma ULS por
+  linha, o PNB com um serviço por linha), e faz uma **nova ronda** (tudo volta a "Por verificar" e a
   linha temporal é limpa) para cada responsável confirmar o seu sistema no
   início de uma crise.
 
