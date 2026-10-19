@@ -80,21 +80,22 @@ componentes.
   / "Em baixo" por sistema num clique, ou componente a componente (com
   nota, ex: previsão de resolução). Fica registado quem e quando.
 - Estados confirmados há mais de 2 horas aparecem como *desatualizados*.
-- O topo mostra a **% de sistemas OK**, a % já verificada, contagens por
-  estado e a lista "Atenção" com o que está em baixo ou degradado. O número
-  vermelho no menu é o total de sistemas com problemas.
-- **Relatório na própria página**: `/estado` e a página partilhada abrem com
-  o resumo (% OK, contagens), a tabela por unidade e a lista "Prioridade":
-  os sistemas que não estão OK **ordenados por impacto** (criticidade ×
-  gravidade: primeiro os de criticidade elevada em baixo, depois os normais
-  em baixo e os elevados degradados, ...), com os componentes afetados e o responsável.
-  "Copiar como texto" (para email/chat) e imprimir/PDF. `GET
-  /api/status/summary` devolve o mesmo em JSON. Os endereços antigos do
-  relatório (`/estado/relatorio`, `/estado-publico/relatorio`) redirecionam.
-- **Página partilhada** (`/estado-publico?token=SPMS%23123`): **sem login**,
+- O número vermelho no menu é o total de sistemas com problemas.
+- **Duas páginas**, com separadores "Submissão" e "Relatório":
+  - **Submissão** (`/estado`): onde se atualiza o estado de cada sistema e
+    componente, com um resumo curto (% OK e contagens) no topo.
+  - **Relatório** (`/estado/relatorio`): o resumo (% OK, contagens), a tabela
+    por unidade e a lista "Prioridade" com os sistemas que não estão OK
+    **ordenados por impacto** (criticidade × gravidade: primeiro os de
+    criticidade elevada em baixo, depois os normais em baixo e os elevados
+    degradados, ...), com os componentes afetados e o responsável. "Copiar como
+    texto" (para email/chat) e imprimir/PDF. `GET /api/status/summary`
+    devolve o mesmo em JSON.
+- **Páginas partilhadas** (`/estado-publico?token=SPMS%23123` para a
+  submissão e `/estado-publico/relatorio?token=SPMS%23123` para o relatório): **sem login**,
   protegida por token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como
   `%23` no link, ou escreve-se o token no formulário da página). Quem tem o
-  link vê **e atualiza** o estado de todos os sistemas e componentes. Atualiza-se sozinha de minuto a minuto.
+  link vê **e atualiza** o estado de todos os sistemas e componentes. Atualizam-se sozinhas de minuto a minuto.
   Não há contas nem links por pessoa: tratar o link como uma password.
 - **Vários componentes de uma vez**: nos sistemas com muitos componentes (LIGHT por
   ULS, PNB por serviço) cada componente tem uma caixa de seleção, com

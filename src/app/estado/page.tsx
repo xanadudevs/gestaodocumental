@@ -4,10 +4,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageUsers } from "@/lib/permissions";
-import { STATUS_LABELS, loadSystems } from "@/lib/status";
+import { STATUS_LABELS, loadSystems, summarize } from "@/lib/status";
 import { formatDate } from "@/lib/labels";
 import { publicStatusPath } from "@/lib/statusPublic";
-import StatusOverview from "@/components/StatusOverview";
+import StatusMiniSummary from "@/components/StatusMiniSummary";
+import StatusTabs from "@/components/StatusTabs";
 import StatusBoard from "@/components/StatusBoard";
 import StatusAdminPanel from "@/components/StatusAdminPanel";
 
@@ -32,8 +33,8 @@ export default async function StatusPage() {
         <div>
           <h1 className="text-xl font-semibold">Estado dos sistemas</h1>
           <p className="text-sm text-gray-500">
-            Semáforo OK / não OK de cada sistema e dos seus componentes (aplicação, base de dados, serviços...).
-            O estado do sistema é o pior dos seus componentes.
+            Submissão: atualiza o estado de cada sistema e dos seus componentes (aplicação, base de dados,
+            serviços...). O estado do sistema é o pior dos seus componentes. O relatório está no outro separador.
           </p>
         </div>
         <div className="flex gap-2">
@@ -48,9 +49,9 @@ export default async function StatusPage() {
         </div>
       </div>
 
-      <StatusOverview systems={systems} />
+      <StatusTabs section="submissao" />
 
-      <h2 className="mb-2 text-sm font-semibold text-gray-700">Todos os sistemas</h2>
+      <StatusMiniSummary summary={summarize(systems, now)} />
 
       {isAdmin && <StatusAdminPanel empty={systems.length === 0} existing={systems.map((s) => s.name)} />}
 
