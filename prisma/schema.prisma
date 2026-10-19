@@ -261,6 +261,61 @@ model LicenseEvent {
   @@index([requestId])
 }
 
+// --- Estado dos sistemas (semáforo OK / não OK em situação de crise) ---
+
+// Um sistema da DANAD (portal, registo nacional, BI, ...). O estado do
+// sistema é o pior estado dos seus componentes (ver src/lib/status.ts).
+model StatusSystem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  unitCode    String // código da unidade (UID, UIA, URN, UPACE) ou DANAD
+  ownerName   String? // responsável (nome, como no organigrama)
+  criticality String   @default("MEDIUM") // Criticality: HIGH | MEDIUM | LOW
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  components StatusComponent[]
+  events     StatusEvent[]
+
+  @@index([unitCode])
+}
+
+// Parte de um sistema que se verifica à parte: aplicação, base de dados,
+// serviço/API, integração, infraestrutura...
+model StatusComponent {
+  id           String   @id @default(cuid())
+  name         String
+  kind         String   @default("APPLICATION") // ComponentKind
+  status       String   @default("UNKNOWN") // ServiceStatus: OK | DEGRADED | DOWN | UNKNOWN
+  note         String?
+  order        Int      @default(0)
+  statusAt     DateTime @default(now()) // quando o estado foi confirmado pela última vez
+  statusById   String?
+  statusByName String?
+
+  system   StatusSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  systemId String
+
+  @@index([systemId])
+}
+
+// Histórico de alterações de estado (linha temporal da crise).
+model StatusEvent {
+  id            String   @id @default(cuid())
+  componentName String
+  fromStatus    String
+  toStatus      String
+  note          String?
+  actorName     String?
+  createdAt     DateTime @default(now())
+
+  system   StatusSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  systemId String
+
+  @@index([systemId])
+  @@index([createdAt])
+}
+
 // --- Modelos padrão do NextAuth ---
 
 model Account {

@@ -11,6 +11,10 @@ de Dados:
   aprovação do coordenador e limite por Direção (ver secção
   [Licenças](#licenças-ex-figma)).
 
+- **Estado dos sistemas** — semáforo OK / degradado / em baixo para os
+  sistemas da DANAD em situação de crise, com relatório (ver secção
+  [Estado dos sistemas](#estado-dos-sistemas)).
+
 ## Stack
 
 - [Next.js 15](https://nextjs.org/) (App Router) + TypeScript + Tailwind CSS
@@ -63,6 +67,38 @@ sobre ele, e só o Diretor (nível Direção) ou um ADMIN aprova ou conclui.
 Os documentos antigos (sem referência) continuam com o fluxo simples de
 aprovação.
 
+## Estado dos sistemas
+
+Menu **Estado dos sistemas** (`/estado`). Cada sistema (RNU, SICO, Portal
+Scubo, Data Lake, ...) tem **componentes** — por omissão *Aplicação* e
+*Base de dados*, e o Administrador acrescenta outros (serviço/API,
+integração, infraestrutura). Cada componente está em **OK**, **Degradado**,
+**Em baixo** ou **Por verificar**; o estado do sistema é o pior dos seus
+componentes.
+
+- Qualquer utilizador autenticado atualiza estados: "Tudo OK" / "Degradado"
+  / "Em baixo" por sistema num clique, ou componente a componente (com
+  nota, ex: previsão de resolução). Fica registado quem e quando.
+- Estados confirmados há mais de 2 horas aparecem como *desatualizados*.
+- O topo mostra a **% de sistemas OK**, a % já verificada, contagens por
+  estado e a lista "Atenção" com o que está em baixo ou degradado. O número
+  vermelho no menu é o total de sistemas com problemas.
+- **Relatório** (`/estado/relatorio`): resumo por unidade, sistemas que não
+  estão OK, por responsável; "Copiar como texto" (para email/chat) e
+  imprimir/PDF. `GET /api/status/summary` devolve o mesmo em JSON.
+- **Página pública** (`/estado-publico?token=SPMS%23123`): só leitura, **sem login** mas com
+  token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como `%23` no link, ou
+  escreve-se o token no formulário da página), atualiza-se
+  sozinha de minuto a minuto. Mostra a % OK, o resumo por unidade e o estado
+  de cada sistema; não mostra responsáveis, notas, componentes nem quem
+  alterou.
+- **Administrador**: "Carregar catálogo DANAD" cria os sistemas da tabela de
+  responsáveis (`SYSTEM_CATALOG` em `src/lib/status.ts`; só entram sistemas,
+  não funções como assessoria ou conformidade); define a criticidade de cada
+  sistema, acrescenta/remove sistemas e componentes, e faz uma **nova
+  ronda** (tudo volta a "Por verificar" e a linha temporal é limpa) para
+  cada responsável confirmar o seu sistema no início de uma crise.
+
 ## 1. Criar o projeto Supabase (base de dados + storage)
 
 1. Cria uma conta grátis em https://supabase.com/ e um novo projeto.
@@ -82,6 +118,21 @@ aprovação.
 > A `service_role` key tem acesso total ao projeto — nunca a exponhas no
 > browser. Só é usada no servidor (rotas API), nunca em código do lado do
 > cliente.
+
+### Evitar que o Supabase pause o projeto
+
+Os projetos gratuitos do Supabase pausam após cerca de 7 dias sem
+atividade (e com o projeto pausado a app e o build falham). O
+`vercel.json` define um cron da Vercel que chama `/api/health` todos os
+dias às 06:00 UTC; essa rota faz uma consulta à base de dados, o que conta
+como atividade. Os crons da Vercel só correm no deploy de **produção** e o
+plano gratuito permite um por dia. Os resultados aparecem em Vercel →
+Settings → Cron Jobs. Se o projeto já estiver pausado, é preciso restaurá-lo
+uma vez no Supabase ("Restore project").
+
+Alternativa/reforço: um monitor externo gratuito (ex: UptimeRobot) a chamar
+`https://<o-teu-dominio>/api/health` de 5 em 5 minutos, que também avisa
+quando a app ou a base de dados deixam de responder.
 
 ## 2. Configurar login
 
