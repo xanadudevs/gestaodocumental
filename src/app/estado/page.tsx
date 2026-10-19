@@ -81,7 +81,7 @@ export default async function StatusPage() {
         </div>
       )}
 
-      {isAdmin && <StatusAdminPanel empty={systems.length === 0} />}
+      {isAdmin && <StatusAdminPanel empty={systems.length === 0} existing={systems.map((s) => s.name)} />}
 
       <StatusBoard
         isAdmin={isAdmin}
