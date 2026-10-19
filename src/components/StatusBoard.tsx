@@ -259,7 +259,7 @@ export default function StatusBoard({
                       {s.components.map((c) => (
                         <div key={c.id} className="flex flex-wrap items-center gap-2 text-sm">
                           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_STYLES[c.status].dot}`} />
-                          <span className="w-44">
+                          <span className="w-full sm:w-72">
                             {c.name}
                             <span className="block text-xs text-gray-400">{COMPONENT_KIND_LABELS[c.kind] ?? c.kind}</span>
                           </span>

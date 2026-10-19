@@ -98,8 +98,9 @@ componentes.
   desmarcar o que não é sistema; "Usar a tabela DANAD" preenche a tabela
   atual). Reimportar atualiza unidade e responsável sem mexer no estado.
   Também define a criticidade de cada sistema, acrescenta/remove sistemas e
-  componentes, e pode criar vários componentes de uma vez (ex: o LIGHT com uma ULS por
-  linha, o PNB com um serviço por linha), e faz uma **nova ronda** (tudo volta a "Por verificar" e a
+  componentes, e pode criar vários componentes de uma vez (um por linha). O **LIGHT**
+  (uma ULS por componente, 46) e o **PNB** (um serviço por componente, 20)
+  ficam assim logo ao importar; as listas estão em `src/lib/statusBreakdown.ts`, e faz uma **nova ronda** (tudo volta a "Por verificar" e a
   linha temporal é limpa) para cada responsável confirmar o seu sistema no
   início de uma crise.
 
