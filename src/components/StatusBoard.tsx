@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge";
 import {
@@ -33,11 +33,12 @@ export type BoardSystem = {
   components: BoardComponent[];
 };
 
-const ACTIONS = ["OK", "DEGRADED", "DOWN"] as const;
+const ACTIONS = ["OK", "DEGRADED", "DOWN", "UNKNOWN"] as const;
 const BUTTON_STYLES: Record<string, { on: string; off: string }> = {
   OK: { on: "bg-green-600 text-white", off: "text-green-700 hover:bg-green-50" },
   DEGRADED: { on: "bg-amber-500 text-white", off: "text-amber-700 hover:bg-amber-50" },
   DOWN: { on: "bg-red-600 text-white", off: "text-red-700 hover:bg-red-50" },
+  UNKNOWN: { on: "bg-gray-500 text-white", off: "text-gray-600 hover:bg-gray-100" },
 };
 
 type Filter = "ALL" | "PROBLEMS" | "UNKNOWN" | "STALE";
@@ -62,8 +63,7 @@ export default function StatusBoard({
   // Prefixo das rotas de atualização: o dos utilizadores com login, ou o do
   // link pessoal de um gestor (/api/status/owner/<token>).
   apiBase?: string;
-  // Página partilhada (sem login): as atualizações levam o token e o nome
-  // de quem atualiza, que fica no histórico.
+  // Página partilhada (sem login): as atualizações levam o token.
   shared?: { token: string };
 }) {
   const router = useRouter();
@@ -74,28 +74,16 @@ export default function StatusBoard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [actor, setActor] = useState("");
-  useEffect(() => {
-    try {
-      setActor(localStorage.getItem("status-actor") ?? "");
-    } catch {}
-  }, []);
+
 
   async function call(key: string, url: string, method: string, body?: unknown) {
-    if (shared && method !== "DELETE" && !actor.trim()) {
-      setError("Indica primeiro o teu nome (em cima), para ficar no histórico.");
-      return;
-    }
     setBusy(key);
     setError("");
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", ...(shared ? { "x-status-token": shared.token } : {}) },
-        body:
-          body === undefined
-            ? undefined
-            : JSON.stringify(shared ? { ...(body as object), actor: actor.trim() } : body),
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Erro ao guardar");
       router.refresh();
@@ -142,25 +130,6 @@ export default function StatusBoard({
 
   return (
     <div>
-      {shared && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border bg-white p-3 text-sm">
-          <label htmlFor="status-actor" className="font-medium">
-            O teu nome
-          </label>
-          <input
-            id="status-actor"
-            value={actor}
-            onChange={(e) => {
-              setActor(e.target.value);
-              try {
-                localStorage.setItem("status-actor", e.target.value);
-              } catch {}
-            }}
-            placeholder="Para ficar registado quem atualizou"
-            className="min-w-[14rem] flex-1 rounded-md border px-2 py-1"
-          />
-        </div>
-      )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {filters.map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)} className={chip(filter === f.key)}>
@@ -245,7 +214,11 @@ export default function StatusBoard({
                               : BUTTON_STYLES[a].off
                           }`}
                           title={
-                            a === "OK" ? "Confirmar que está tudo OK" : `Marcar todos os componentes como ${STATUS_LABELS[a].toLowerCase()}`
+                            a === "OK"
+                              ? "Confirmar que está tudo OK"
+                              : a === "UNKNOWN"
+                                ? "Voltar a pôr todos os componentes por verificar"
+                                : `Marcar todos os componentes como ${STATUS_LABELS[a].toLowerCase()}`
                           }
                         >
                           {a === "OK" ? "Tudo OK" : STATUS_LABELS[a]}
@@ -296,7 +269,7 @@ export default function StatusBoard({
                             className="min-w-[10rem] flex-1 rounded-md border px-2 py-1 text-xs"
                           />
                           <span className={`text-xs ${c.stale ? "text-amber-700" : "text-gray-400"}`}>
-                            {c.status === "UNKNOWN" ? "por verificar" : `${ago(c.statusAt)}${c.statusByName ? ` · ${c.statusByName}` : ""}`}
+                            {c.status === "UNKNOWN" ? "por verificar" : ago(c.statusAt)}
                           </span>
                           {isAdmin && (
                             <button
@@ -343,82 +316,86 @@ function AdminSystemControls({
   const [batch, setBatch] = useState("");
   const [replace, setReplace] = useState(false);
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md bg-gray-50 p-2 text-xs">
-      <span className="font-medium text-gray-600">Opções do administrador</span>
-      <label className="flex items-center gap-1.5 text-gray-600" title="Os sistemas críticos aparecem destacados na lista e no relatório">
-        Criticidade
-      <select
-        value={system.criticality}
-        disabled={busy}
-        onChange={(e) => onCall(`/api/status/systems/${system.id}`, "PATCH", { criticality: e.target.value })}
-        className="rounded-md border px-2 py-1"
-        aria-label="Criticidade"
-      >
-        {Object.entries(CRITICALITY_LABELS).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </select>
+    <div className="space-y-2 rounded-md bg-gray-50 p-2 text-xs">
+      <label className="flex items-center gap-2 text-gray-600" title="Os sistemas críticos aparecem destacados na lista e no relatório">
+        <span className="font-medium">Criticidade</span>
+        <select
+          value={system.criticality}
+          disabled={busy}
+          onChange={(e) => onCall(`/api/status/systems/${system.id}`, "PATCH", { criticality: e.target.value })}
+          className="rounded-md border px-2 py-1"
+        >
+          {Object.entries(CRITICALITY_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
       </label>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Novo componente (ex: API de integração)"
-        className="min-w-[12rem] rounded-md border px-2 py-1"
-      />
-      <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-md border px-2 py-1" aria-label="Tipo">
-        {Object.entries(COMPONENT_KIND_LABELS).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </select>
-      <button
-        disabled={busy || !name.trim()}
-        onClick={() => {
-          onCall(`/api/status/systems/${system.id}/components`, "POST", { name, kind });
-          setName("");
-        }}
-        className="rounded-md bg-brand-600 px-2.5 py-1 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-      >
-        + Componente
-      </button>
-      <div className="w-full">
-        <textarea
-          value={batch}
-          onChange={(e) => setBatch(e.target.value)}
-          rows={3}
-          placeholder={"Vários componentes de uma vez, um por linha (ex: uma ULS por linha, ou um serviço por linha).\nUsa o tipo escolhido acima (ULS, Serviço, ...)."}
-          className="w-full rounded-md border px-2 py-1"
-        />
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 text-gray-600">
-            <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
-            Substituir os componentes atuais
-          </label>
+
+      <details>
+        <summary className="cursor-pointer text-gray-500">Mais opções</summary>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Novo componente (ex: API de integração)"
+            className="min-w-[12rem] rounded-md border px-2 py-1"
+          />
+          <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-md border px-2 py-1" aria-label="Tipo">
+            {Object.entries(COMPONENT_KIND_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
           <button
-            disabled={busy || !batch.trim()}
+            disabled={busy || !name.trim()}
             onClick={() => {
-              const names = batch.split(/\r?\n/).map((n) => n.trim()).filter(Boolean);
-              if (replace && !confirm(`Apagar os componentes atuais de "${system.name}" e criar ${names.length} novos?`)) return;
-              onCall(`/api/status/systems/${system.id}/components`, "POST", { names, kind, replace });
-              setBatch("");
-              setReplace(false);
+              onCall(`/api/status/systems/${system.id}/components`, "POST", { name, kind });
+              setName("");
             }}
             className="rounded-md bg-brand-600 px-2.5 py-1 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
           >
-            Criar em lote
+            + Componente
+          </button>
+          <div className="w-full">
+            <textarea
+              value={batch}
+              onChange={(e) => setBatch(e.target.value)}
+              rows={3}
+              placeholder={"Vários componentes de uma vez, um por linha.\nUsa o tipo escolhido acima."}
+              className="w-full rounded-md border px-2 py-1"
+            />
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-1.5 text-gray-600">
+                <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+                Substituir os componentes atuais
+              </label>
+              <button
+                disabled={busy || !batch.trim()}
+                onClick={() => {
+                  const names = batch.split(/\r?\n/).map((n) => n.trim()).filter(Boolean);
+                  if (replace && !confirm(`Apagar os componentes atuais de "${system.name}" e criar ${names.length} novos?`)) return;
+                  onCall(`/api/status/systems/${system.id}/components`, "POST", { names, kind, replace });
+                  setBatch("");
+                  setReplace(false);
+                }}
+                className="rounded-md bg-brand-600 px-2.5 py-1 font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              >
+                Criar em lote
+              </button>
+            </div>
+          </div>
+          <button
+            disabled={busy}
+            onClick={() => confirm(`Remover o sistema "${system.name}" e o seu histórico?`) && onCall(`/api/status/systems/${system.id}`, "DELETE")}
+            className="ml-auto text-red-600 hover:underline"
+          >
+            Remover sistema
           </button>
         </div>
-      </div>
-      <button
-        disabled={busy}
-        onClick={() => confirm(`Remover o sistema "${system.name}" e o seu histórico?`) && onCall(`/api/status/systems/${system.id}`, "DELETE")}
-        className="ml-auto text-red-600 hover:underline"
-      >
-        Remover sistema
-      </button>
+      </details>
     </div>
   );
 }

@@ -20,8 +20,9 @@ export async function updateComponent(
   if (!component || (onlyOwner !== undefined && component.system.ownerName !== onlyOwner)) {
     return { ok: false, status: 404, error: "Componente não encontrado" };
   }
-  // Sem nota nova, uma nota antiga de "em baixo" não deve sobreviver a um OK.
-  const newNote = note !== undefined ? note || null : status === "OK" ? null : component.note;
+  // Sem nota nova, uma nota antiga de "em baixo" não deve sobreviver a um OK
+  // nem a voltar a "por verificar".
+  const newNote = note !== undefined ? note || null : status === "OK" || status === "UNKNOWN" ? null : component.note;
   await prisma.$transaction([
     prisma.statusComponent.update({
       where: { id: componentId },
@@ -59,7 +60,7 @@ export async function setAllComponents(
   }
   if (system.components.length === 0) return { ok: false, status: 400, error: "O sistema não tem componentes" };
 
-  const newNote = status === "OK" ? null : note || null;
+  const newNote = status === "OK" || status === "UNKNOWN" ? null : note || null;
   const now = new Date();
   await prisma.$transaction([
     ...system.components.map((c) =>

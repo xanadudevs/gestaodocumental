@@ -41,36 +41,9 @@ export default function StatusAdminPanel({ empty, existing }: { empty: boolean; 
 
   return (
     <details className="mb-5 rounded-md border border-dashed p-3" open={empty}>
-      <summary className="cursor-pointer text-sm font-medium text-gray-700">Administração do catálogo</summary>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          disabled={busy}
-          onClick={() =>
-            run("/api/status/apply-defaults", undefined, (d) => {
-              const parts = [];
-              if (d.breakdown) parts.push(`${d.breakdown} sistemas passaram a ter uma linha por ULS/serviço (LIGHT, PNB)`);
-              if (d.services) parts.push(`"Serviços / API" acrescentado a ${d.services} sistemas`);
-              return parts.length ? `${parts.join("; ")}.` : "Os componentes já estavam atualizados.";
-            })
-          }
-          className="rounded-md border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-          title="LIGHT por ULS, PNB por serviço e Serviços / API nos restantes"
-        >
-          Atualizar componentes dos sistemas
-        </button>
-        <button
-          disabled={busy}
-          onClick={() =>
-            confirm(
-              'Nova ronda: todos os componentes voltam a "Por verificar" e a linha temporal é limpa. Continuar?'
-            ) && run("/api/status/reset", undefined, (d) => `${d.reset} componentes por verificar.`)
-          }
-          className="rounded-md border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-        >
-          Nova ronda (pôr tudo por verificar)
-        </button>
-      </div>
-
+      <summary className="cursor-pointer text-sm font-medium text-gray-700">Novo sistema</summary>
+      {/* Catálogo vazio: mostra a importação do Excel; depois só o "Novo sistema". */}
+      {empty && (
       <div className="mt-4 rounded-md border bg-white p-3">
         <p className="text-sm font-medium text-gray-700">Importar do Excel</p>
         <p className="mb-2 text-xs text-gray-500">
@@ -181,6 +154,7 @@ export default function StatusAdminPanel({ empty, existing }: { empty: boolean; 
           </div>
         )}
       </div>
+      )}
 
       <form
         className="mt-3 flex flex-wrap items-center gap-2 text-sm"

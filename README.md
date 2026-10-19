@@ -89,20 +89,19 @@ componentes.
 - **Página partilhada** (`/estado-publico?token=SPMS%23123`): **sem login**,
   protegida por token (muda-se com `STATUS_PUBLIC_TOKEN`; o `#` vai como
   `%23` no link, ou escreve-se o token no formulário da página). Quem tem o
-  link vê **e atualiza** o estado de todos os sistemas e componentes; diz o
-  seu nome, que fica no histórico. Atualiza-se sozinha de minuto a minuto.
+  link vê **e atualiza** o estado de todos os sistemas e componentes; Atualiza-se sozinha de minuto a minuto.
   Não há contas nem links por pessoa: tratar o link como uma password.
-- **Administrador**: importa os sistemas do Excel (cola as colunas Unidade,
-  Colaborador e Função/Responsabilidade; cada responsabilidade passa a ser um
-  sistema, com o colaborador como responsável, e há pré-visualização para
-  desmarcar o que não é sistema; "Usar a tabela DANAD" preenche a tabela
-  atual). Reimportar atualiza unidade e responsável sem mexer no estado.
-  Também define a criticidade de cada sistema, acrescenta/remove sistemas e
-  componentes, e pode criar vários componentes de uma vez (um por linha). O **LIGHT**
-  (uma ULS por componente, 46) e o **PNB** (um serviço por componente, 20)
-  ficam assim logo ao importar; as listas estão em `src/lib/statusBreakdown.ts`, e faz uma **nova ronda** (tudo volta a "Por verificar" e a
-  linha temporal é limpa) para cada responsável confirmar o seu sistema no
-  início de uma crise.
+- **Por verificar**: cada sistema e cada componente tem um botão "Por verificar"
+  para voltar a pedir confirmação (útil no início de uma crise ou de uma ronda).
+- **Administrador**: no painel "Novo sistema" cria sistemas. Se o catálogo
+  estiver vazio, aparece também a importação do Excel (cola as colunas
+  Unidade, Colaborador e Função/Responsabilidade; cada responsabilidade
+  passa a ser um sistema, com o colaborador como responsável, e há
+  pré-visualização). Dentro de cada sistema define a **Criticidade** e, em
+  "Mais opções", acrescenta componentes (também em lote, um por linha) ou
+  remove o sistema. O **LIGHT** (uma ULS por componente, 46) e o **PNB** (um
+  serviço por componente, 20) ficam assim logo ao importar; as listas estão em
+  `src/lib/statusBreakdown.ts`.
 
 ## 1. Criar o projeto Supabase (base de dados + storage)
 

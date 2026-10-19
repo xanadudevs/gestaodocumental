@@ -111,7 +111,6 @@ export default async function StatusPage() {
                   {STATUS_LABELS[e.fromStatus] ?? e.fromStatus} → {STATUS_LABELS[e.toStatus] ?? e.toStatus}
                 </span>
                 {e.note && <span className="text-gray-600">— {e.note}</span>}
-                {e.actorName && <span className="ml-auto text-xs text-gray-400">{e.actorName}</span>}
               </li>
             ))}
           </ul>
