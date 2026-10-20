@@ -19,24 +19,29 @@ export type LicenseRow = {
   createdAt: string;
   // O utilizador pode aprovar este pedido (pendente e é o coordenador indicado, ou Admin).
   canDecide: boolean;
+  // O utilizador pode dar o acesso (Apoio Administrativo, pedido aprovado).
+  canGrant: boolean;
 };
 
 // Tabela de licenças. Permite escolher pedidos: aprovar vários de uma vez (os
-// pendentes de que o utilizador é o coordenador) e, com `canDelete` (ADMIN),
-// apagá-los (ex: pedidos de teste).
+// pendentes de que o utilizador é o coordenador), dar o acesso a vários (o
+// Apoio Administrativo, nos aprovados) e, com `canDelete` (ADMIN), apagá-los
+// (ex: pedidos de teste).
 export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; canDelete: boolean }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [granting, setGranting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Quem só aprova escolhe apenas os pedidos que pode aprovar.
-  const selectable = rows.filter((r) => canDelete || r.canDecide);
+  const selectable = rows.filter((r) => canDelete || r.canDecide || r.canGrant);
   const showSelect = selectable.length > 0;
   const allSelected = selectable.length > 0 && selectable.every((r) => selected.has(r.id));
   const toApprove = rows.filter((r) => selected.has(r.id) && r.canDecide);
+  const toGrant = rows.filter((r) => selected.has(r.id) && r.canGrant);
 
   function toggle(id: string) {
     const next = new Set(selected);
@@ -73,6 +78,34 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
     }
   }
 
+  async function grantSelected() {
+    const ids = toGrant.map((r) => r.id);
+    if (!confirm(`Marcar o acesso como dado em ${ids.length} licença(s)? Os beneficiários são avisados por email.`)) return;
+    setGranting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/licenses/grant-many", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao dar o acesso");
+      const failed: { name: string; error: string }[] = data.failed ?? [];
+      setNotice(
+        `Acesso dado em ${data.granted} licença(s)` +
+          (failed.length ? `; ${failed.length} falharam: ${failed.map((f) => `${f.name} (${f.error})`).join("; ")}` : "")
+      );
+      setSelected(new Set());
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setGranting(false);
+    }
+  }
+
   async function deleteSelected() {
     const ids = [...selected];
     if (!confirm(`Apagar ${ids.length} pedido(s) de licença? Esta ação não pode ser desfeita.`)) return;
@@ -104,16 +137,27 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
           {toApprove.length > 0 && (
             <button
               onClick={approveSelected}
-              disabled={approving || deleting}
+              disabled={approving || granting || deleting}
               className="rounded-md bg-green-600 px-3 py-1 font-medium text-white hover:bg-green-700 disabled:opacity-60"
             >
               {approving ? "A aprovar..." : `Aprovar ${toApprove.length === selected.size ? "selecionados" : `${toApprove.length} aprováveis`}`}
             </button>
           )}
+          {toGrant.length > 0 && (
+            <button
+              onClick={grantSelected}
+              disabled={granting || approving || deleting}
+              className="rounded-md bg-brand-600 px-3 py-1 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              {granting
+                ? "A registar..."
+                : `Dar acesso ${toGrant.length === selected.size ? "aos selecionados" : `a ${toGrant.length}`}`}
+            </button>
+          )}
           {canDelete && (
             <button
               onClick={deleteSelected}
-              disabled={deleting || approving}
+              disabled={deleting || approving || granting}
               className="rounded-md bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-60"
             >
               {deleting ? "A apagar..." : "Apagar selecionados"}
@@ -152,7 +196,7 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
               <tr key={r.id} className={selected.has(r.id) ? "bg-brand-50" : "hover:bg-gray-50"}>
                 {showSelect && (
                   <td className="px-3 py-2">
-                    {(canDelete || r.canDecide) && (
+                    {(canDelete || r.canDecide || r.canGrant) && (
                       <input
                         type="checkbox"
                         aria-label={`Selecionar ${r.beneficiaryName}`}
