@@ -64,6 +64,11 @@ export function unitSigla(unitName: string) {
   return acronym ? `${root} ${acronym}` : root;
 }
 
+// Código da unidade (DANAD, UPACE, UIA, UID, URN), se tiver.
+export function unitCodeOf(unitName: string) {
+  return CODES.get(unitName);
+}
+
 // Coordenações da Direção (as unidades por baixo da raiz do organigrama).
 export const COORDINATION_NAMES = new Set((ORG_CHART.children ?? []).map((n) => n.name));
 

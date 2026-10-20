@@ -1,13 +1,27 @@
-// Funções puras sobre o limite de licenças por Direção (seguras para o browser).
+// Funções puras sobre os limites de licenças (seguras para o browser).
 
-// A Direção já ocupou todas as licenças do produto? (sem limite: nunca)
-export function isAtLimit(product: { maxPerDirection: number | null }, used: number) {
-  return product.maxPerDirection !== null && used >= product.maxPerDirection;
+type LimitConfig = {
+  maxPerDirection: number | null;
+  // Quota por unidade (código da unidade -> licenças). Quando existe, o
+  // limite conta-se por coordenação e não pela Direção toda.
+  maxPerUnit?: Record<string, number>;
+};
+
+// Limite aplicável a um pedido da unidade `unitCode`: a quota da unidade (0
+// se não tem nenhuma) ou o máximo da Direção; null = sem limite.
+export function limitFor(product: LimitConfig, unitCode: string | undefined): number | null {
+  if (product.maxPerUnit) return product.maxPerUnit[unitCode ?? ""] ?? 0;
+  return product.maxPerDirection;
+}
+
+// Já ocupou todas as licenças do limite? (sem limite: nunca)
+export function isAtLimit(limit: number | null, used: number) {
+  return limit !== null && used >= limit;
 }
 
 // "3 de 22 licenças Figma ocupadas" ou, sem limite, "3 licenças Copilot ocupadas".
-export function usageText(product: { name: string; maxPerDirection: number | null }, used: number) {
-  return product.maxPerDirection === null
-    ? `${used} licenças ${product.name} ocupadas`
-    : `${used} de ${product.maxPerDirection} licenças ${product.name} ocupadas`;
+export function usageText(productName: string, limit: number | null, used: number) {
+  return limit === null
+    ? `${used} licenças ${productName} ocupadas`
+    : `${used} de ${limit} licenças ${productName} ocupadas`;
 }

@@ -9,11 +9,12 @@ import {
   countActiveLicenses,
   getLicenseProduct,
   isAtLimit,
+  limitFor,
   productName,
   resolveDirection,
 } from "@/lib/licenses";
 import { licenseRequestMailInclude, notify, requestedMail } from "@/lib/licenseMail";
-import { COORDINATION_NAMES } from "@/lib/orgChart";
+import { COORDINATION_NAMES, ORG_CHART, unitCodeOf } from "@/lib/orgChart";
 
 const schema = z.object({
   product: z.string(),
@@ -50,7 +51,8 @@ export async function POST(req: NextRequest) {
   }
 
   const coordination = await prisma.unit.findUnique({ where: { id: data.coordinationId }, select: { name: true } });
-  if (!coordination || !COORDINATION_NAMES.has(coordination.name)) {
+  // Coordenações da DANAD ou a própria Direção (ex: licenças do Diretor e da Assessoria).
+  if (!coordination || !(COORDINATION_NAMES.has(coordination.name) || coordination.name === ORG_CHART.name)) {
     return NextResponse.json({ error: "Escolhe uma das coordenações da DANAD" }, { status: 400 });
   }
 
@@ -87,11 +89,20 @@ export async function POST(req: NextRequest) {
   }
 
   if (product.countedTypes.includes(data.licenseType)) {
-    const active = await countActiveLicenses(prisma, direction.id, product.key);
-    if (isAtLimit(product, active)) {
+    const limit = limitFor(product, unitCodeOf(coordination.name));
+    const active = await countActiveLicenses(
+      prisma,
+      { directionId: direction.id, coordinationId: data.coordinationId },
+      product.key
+    );
+    if (isAtLimit(limit, active)) {
+      const who = product.maxPerUnit ? coordination.name : direction.name;
       return NextResponse.json(
         {
-          error: `A ${direction.name} já tem ${active} de ${product.maxPerDirection} licenças ${product.name} ocupadas. É preciso libertar uma antes de pedir outra.`,
+          error:
+            limit === 0
+              ? `${who} não tem licenças ${product.name} atribuídas.`
+              : `${who} já tem ${active} de ${limit} licenças ${product.name} ocupadas. É preciso libertar uma antes de pedir outra.`,
         },
         { status: 409 }
       );

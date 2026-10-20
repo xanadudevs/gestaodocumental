@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { LicenseStatus, LicenseType } from "@/lib/enums";
 import { ORG_CHART } from "@/lib/orgChart";
-export { isAtLimit, usageText } from "@/lib/licenseUsage";
+export { isAtLimit, limitFor, usageText } from "@/lib/licenseUsage";
 
 export type LicenseProductConfig = {
   key: string;
@@ -10,6 +10,11 @@ export type LicenseProductConfig = {
   // Máximo de licenças ativas (aprovadas ou já atribuídas) por Direção;
   // null = sem limite.
   maxPerDirection: number | null;
+  // Quota por unidade (código -> licenças): substitui o máximo da Direção e
+  // conta-se por coordenação. Unidades sem quota não podem pedir.
+  maxPerUnit?: Record<string, number>;
+  // Licenças do total que ficam de reserva (sem atribuir a nenhuma unidade).
+  reserve?: number;
   // Tipos de licença que contam para esse máximo.
   countedTypes: LicenseType[];
 };
@@ -29,6 +34,8 @@ export const LICENSE_PRODUCTS: LicenseProductConfig[] = [
     name: "Copilot",
     types: [LicenseType.STANDARD],
     maxPerDirection: null,
+    // 10 no total: 1 Diretor + 1 Assessoria (Direção) e 2 por coordenação.
+    maxPerUnit: { DANAD: 2, UPACE: 2, UID: 2, UIA: 2, URN: 2 },
     countedTypes: [LicenseType.STANDARD],
   },
   {
@@ -36,6 +43,9 @@ export const LICENSE_PRODUCTS: LicenseProductConfig[] = [
     name: "OpenAI",
     types: [LicenseType.STANDARD],
     maxPerDirection: null,
+    // 15 no total: 3 por coordenação e 3 de reserva.
+    maxPerUnit: { UPACE: 3, UID: 3, UIA: 3, URN: 3 },
+    reserve: 3,
     countedTypes: [LicenseType.STANDARD],
   },
 ];
@@ -71,11 +81,17 @@ export async function resolveDirection(db: Db, _unitId: string) {
   return db.unit.findFirst({ where: { name: ORG_CHART.name }, select: { id: true, name: true } });
 }
 
-export async function countActiveLicenses(db: Db, directionId: string, productKey: string) {
+// Licenças ocupadas de um produto: pela coordenação, nos produtos com quota
+// por unidade, ou pela Direção toda nos restantes.
+export async function countActiveLicenses(
+  db: Db,
+  scope: { directionId: string; coordinationId: string },
+  productKey: string
+) {
   const product = getLicenseProduct(productKey);
   return db.licenseRequest.count({
     where: {
-      directionId,
+      ...(product?.maxPerUnit ? { coordinationId: scope.coordinationId } : { directionId: scope.directionId }),
       product: productKey,
       status: { in: ACTIVE_LICENSE_STATUSES },
       licenseType: { in: product?.countedTypes ?? [] },
@@ -83,11 +99,12 @@ export async function countActiveLicenses(db: Db, directionId: string, productKe
   });
 }
 
-// Licenças ocupadas por Direção e produto, indexadas por
-// `${directionId}:${product}`.
+// Licenças ocupadas, indexadas por `${directionId}:${product}` (produtos com
+// máximo por Direção) ou por `${coordinationId}:${product}` (produtos com
+// quota por unidade).
 export async function getDirectionUsage(db: Db): Promise<Record<string, number>> {
   const groups = await db.licenseRequest.groupBy({
-    by: ["directionId", "product", "licenseType"],
+    by: ["directionId", "coordinationId", "product", "licenseType"],
     where: { status: { in: ACTIVE_LICENSE_STATUSES } },
     _count: { _all: true },
   });
@@ -95,7 +112,7 @@ export async function getDirectionUsage(db: Db): Promise<Record<string, number>>
   for (const g of groups) {
     const product = getLicenseProduct(g.product);
     if (!product?.countedTypes.includes(g.licenseType as LicenseType)) continue;
-    const key = `${g.directionId}:${g.product}`;
+    const key = `${product.maxPerUnit ? g.coordinationId : g.directionId}:${g.product}`;
     usage[key] = (usage[key] ?? 0) + g._count._all;
   }
   return usage;

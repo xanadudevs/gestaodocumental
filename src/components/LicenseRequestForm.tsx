@@ -3,13 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LICENSE_TYPE_LABELS, formatUserOrg } from "@/lib/labels";
-import { isAtLimit, usageText } from "@/lib/licenseUsage";
+import { isAtLimit, limitFor, usageText } from "@/lib/licenseUsage";
 
-type Product = { key: string; name: string; types: string[]; maxPerDirection: number | null; countedTypes: string[] };
+type Product = {
+  key: string;
+  name: string;
+  types: string[];
+  maxPerDirection: number | null;
+  maxPerUnit?: Record<string, number>;
+  countedTypes: string[];
+};
 type CoordinationOption = {
   id: string;
   label: string;
   depth: number;
+  // código da unidade (DANAD, UPACE, UIA, UID, URN)
+  code?: string;
   direction: { id: string; name: string } | null;
 };
 type Coordinator = {
@@ -35,7 +44,8 @@ export default function LicenseRequestForm({
   coordinators: Coordinator[];
   // coordenador de cada coordenação: unitId -> userId
   defaultCoordinator: Record<string, string>;
-  // licenças ocupadas por `${directionId}:${product}`
+  // licenças ocupadas por `${directionId}:${product}` (máximo por Direção) ou
+  // `${coordinationId}:${product}` (quota por unidade)
   usage: Record<string, number>;
   defaults: { name: string; email: string };
   isLoggedIn: boolean;
@@ -52,9 +62,10 @@ export default function LicenseRequestForm({
   const product = products.find((p) => p.key === productKey);
   const coordination = coordinations.find((c) => c.id === coordinationId);
   const direction = coordination?.direction ?? null;
-  const used = direction && product ? usage[`${direction.id}:${product.key}`] ?? 0 : null;
-  const full =
-    !!product && used !== null && isAtLimit(product, used) && product.countedTypes.includes(licenseType);
+  const limit = product ? limitFor(product, coordination?.code) : null;
+  const usageKey = product?.maxPerUnit ? coordination?.id : direction?.id;
+  const used = usageKey && product ? usage[`${usageKey}:${product.key}`] ?? 0 : null;
+  const full = !!product && used !== null && isAtLimit(limit, used) && product.countedTypes.includes(licenseType);
   const coordinator = coordinators.find((c) => c.id === coordinatorId);
   const isDefaultCoordinator = !!coordination && defaultCoordinator[coordination.id] === coordinatorId;
 
@@ -135,10 +146,13 @@ export default function LicenseRequestForm({
               </option>
             ))}
           </select>
-          {direction && product && (
+          {coordination && direction && product && (
             <p className={`mt-1 text-xs ${full ? "text-red-600" : "text-gray-500"}`}>
-              {direction.name}: {usageText(product, used ?? 0)}
-              {full && " — limite atingido, é preciso libertar uma licença antes de pedir outra."}
+              {product.maxPerUnit ? coordination.label : direction.name}: {usageText(product.name, limit, used ?? 0)}
+              {full &&
+                (limit === 0
+                  ? " — esta unidade não tem licenças atribuídas."
+                  : " — limite atingido, é preciso libertar uma licença antes de pedir outra.")}
             </p>
           )}
         </div>
