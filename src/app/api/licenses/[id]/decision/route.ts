@@ -5,7 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canDecideOnLicense } from "@/lib/permissions";
 import { LicenseAction, LicenseStatus } from "@/lib/enums";
-import { countActiveLicenses, getLicenseProduct, isAtLimit } from "@/lib/licenses";
+import { countActiveLicenses, getLicenseProduct, isAtLimit, limitFor } from "@/lib/licenses";
+import { unitCodeOf } from "@/lib/orgChart";
 import { approvedMail, licenseRequestMailInclude, notify, rejectedMail } from "@/lib/licenseMail";
 
 class ConflictError extends Error {}
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const product = getLicenseProduct(request.product);
+  const coordination = await prisma.unit.findUnique({ where: { id: request.coordinationId }, select: { name: true } });
+  const limit = product ? limitFor(product, coordination ? unitCodeOf(coordination.name) : undefined) : null;
 
   try {
     // Transação serializável: dois coordenadores a aprovar ao mesmo tempo
@@ -61,10 +64,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       prisma.$transaction(
         async (tx) => {
           if (decision === LicenseStatus.APPROVED && product?.countedTypes.includes(request.licenseType as never)) {
-            const active = await countActiveLicenses(tx, request.directionId, request.product);
-            if (isAtLimit(product, active)) {
+            const active = await countActiveLicenses(
+              tx,
+              { directionId: request.directionId, coordinationId: request.coordinationId },
+              request.product,
+            );
+            if (isAtLimit(limit, active)) {
               throw new ConflictError(
-                `Limite atingido: a Direção já tem ${active} de ${product.maxPerDirection} licenças ${product.name} ocupadas. Liberta uma licença antes de aprovar.`,
+                `Limite atingido: ${product.maxPerUnit ? coordination?.name ?? "a coordenação" : "a Direção"} já tem ${active} de ${limit} licenças ${product.name} ocupadas. Liberta uma licença antes de aprovar.`,
               );
             }
           }

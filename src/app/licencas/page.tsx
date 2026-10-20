@@ -5,10 +5,10 @@ import type { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LicenseTable from "@/components/LicenseTable";
-import { unitLabel } from "@/lib/orgChart";
+import { COORDINATION_NAMES, ORG_CHART, unitCodeOf, unitLabel } from "@/lib/orgChart";
 import { canManageLicenses } from "@/lib/permissions";
 import { LICENSE_PRODUCTS, getDirectionUsage, productName } from "@/lib/licenses";
-import { isAtLimit } from "@/lib/licenseUsage";
+import { isAtLimit, limitFor } from "@/lib/licenseUsage";
 import { LicenseStatus, Role } from "@/lib/enums";
 
 type SearchParams = { scope?: string; type?: string; status?: string; direction?: string; product?: string };
@@ -35,7 +35,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
   }
   if (scope === "grant") where.status = LicenseStatus.APPROVED;
 
-  const [requests, usage, pendingForMe, toGrant, directions] = await Promise.all([
+  const [requests, usage, pendingForMe, toGrant, directions, quotaUnits] = await Promise.all([
     prisma.licenseRequest.findMany({
       where,
       include: {
@@ -55,7 +55,29 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    // Unidades que podem ter quota de licenças (coordenações e a Direção).
+    prisma.unit.findMany({
+      where: { name: { in: [...COORDINATION_NAMES, ORG_CHART.name] } },
+      select: { id: true, name: true },
+    }),
   ]);
+
+  // Produtos com quota por unidade (Copilot, OpenAI): um cartão por unidade
+  // com quota e um total, com as licenças de reserva.
+  const quotaProducts = LICENSE_PRODUCTS.filter((p) => p.maxPerUnit).map((p) => {
+    const rows = Object.keys(p.maxPerUnit!).flatMap((code) => {
+      const unit = quotaUnits.find((u) => unitCodeOf(u.name) === code);
+      return unit
+        ? [{ id: unit.id, code, label: unitLabel(unit.name), limit: p.maxPerUnit![code], used: usage[`${unit.id}:${p.key}`] ?? 0 }]
+        : [];
+    });
+    return {
+      product: p,
+      rows,
+      used: rows.reduce((n, r) => n + r.used, 0),
+      total: rows.reduce((n, r) => n + r.limit, 0) + (p.reserve ?? 0),
+    };
+  });
 
   const tabs = [
     { key: "all", label: "Todas" },
@@ -112,7 +134,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
       {directions.length > 0 && (
         <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {directions.map((d) =>
-            LICENSE_PRODUCTS.map((p) => {
+            LICENSE_PRODUCTS.filter((p) => !p.maxPerUnit).map((p) => {
               const used = usage[`${d.id}:${p.key}`] ?? 0;
               const pct = p.maxPerDirection === null ? 0 : Math.min(100, Math.round((used / p.maxPerDirection) * 100));
               const selected = direction === d.id;
@@ -135,7 +157,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
                   {p.maxPerDirection !== null && (
                     <div className="mt-2 h-1.5 rounded-full bg-gray-100">
                       <div
-                        className={`h-1.5 rounded-full ${isAtLimit(p, used) ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-brand-500"}`}
+                        className={`h-1.5 rounded-full ${isAtLimit(p.maxPerDirection, used) ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-brand-500"}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -146,6 +168,45 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
           )}
         </div>
       )}
+
+      {quotaProducts.map(({ product: p, rows, used, total }) => (
+        <div key={p.key} className="mb-5">
+          <p className="mb-2 text-sm">
+            <span className="font-semibold">{p.name}</span>
+            <span className="text-gray-500">
+              {" "}
+              — {used} de {total} licenças ocupadas
+              {p.reserve ? ` (${p.reserve} de reserva, sem atribuir a nenhuma unidade)` : ""}
+            </span>
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map((r) => {
+              const pct = r.limit === 0 ? 100 : Math.min(100, Math.round((r.used / r.limit) * 100));
+              return (
+                <Link
+                  key={r.id}
+                  href={hrefFor({ product: p.key })}
+                  className="rounded-md border bg-white p-3 hover:border-brand-500"
+                >
+                  <p className="truncate text-xs text-gray-500" title={r.label}>
+                    {r.label}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    <span className="text-lg font-semibold">{r.used}</span>
+                    <span className="text-gray-500"> / {r.limit} licenças {p.name}</span>
+                  </p>
+                  <div className="mt-2 h-1.5 rounded-full bg-gray-100">
+                    <div
+                      className={`h-1.5 rounded-full ${isAtLimit(limitFor(p, r.code), r.used) ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-brand-500"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
 
       <div className="mb-3 flex gap-2 overflow-x-auto border-b">
         {tabs.map((tab) => (

@@ -48,7 +48,7 @@ function details(r: RequestForMail) {
     ["Email profissional", r.beneficiaryEmail],
     ...(r.jobTitle ? [["Função", r.jobTitle] as [string, string]] : []),
     ["Gestor de Projeto", `${r.superiorName} <${r.superiorEmail}>`],
-    ["Coordenação", r.coordination.name],
+    ["Unidade", r.coordination.name],
     ["Direção", r.direction.name],
     ...(r.project ? [["Projeto", r.project] as [string, string]] : []),
     ["Justificação", r.justification],

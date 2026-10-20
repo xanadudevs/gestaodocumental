@@ -3,13 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LICENSE_TYPE_LABELS, formatUserOrg } from "@/lib/labels";
-import { isAtLimit, usageText } from "@/lib/licenseUsage";
+import { isAtLimit, limitFor, usageText } from "@/lib/licenseUsage";
 
-type Product = { key: string; name: string; types: string[]; maxPerDirection: number | null; countedTypes: string[] };
+type Product = {
+  key: string;
+  name: string;
+  types: string[];
+  maxPerDirection: number | null;
+  maxPerUnit?: Record<string, number>;
+  countedTypes: string[];
+};
 type CoordinationOption = {
   id: string;
   label: string;
   depth: number;
+  // código da unidade (DANAD, UPACE, UIA, UID, URN)
+  code?: string;
   direction: { id: string; name: string } | null;
 };
 type Coordinator = {
@@ -33,9 +42,10 @@ export default function LicenseRequestForm({
   products: Product[];
   coordinations: CoordinationOption[];
   coordinators: Coordinator[];
-  // coordenador de cada coordenação: unitId -> userId
+  // coordenador de cada unidade: unitId -> userId
   defaultCoordinator: Record<string, string>;
-  // licenças ocupadas por `${directionId}:${product}`
+  // licenças ocupadas por `${directionId}:${product}` (máximo por Direção) ou
+  // `${coordinationId}:${product}` (quota por unidade)
   usage: Record<string, number>;
   defaults: { name: string; email: string };
   isLoggedIn: boolean;
@@ -52,15 +62,16 @@ export default function LicenseRequestForm({
   const product = products.find((p) => p.key === productKey);
   const coordination = coordinations.find((c) => c.id === coordinationId);
   const direction = coordination?.direction ?? null;
-  const used = direction && product ? usage[`${direction.id}:${product.key}`] ?? 0 : null;
-  const full =
-    !!product && used !== null && isAtLimit(product, used) && product.countedTypes.includes(licenseType);
+  const limit = product ? limitFor(product, coordination?.code) : null;
+  const usageKey = product?.maxPerUnit ? coordination?.id : direction?.id;
+  const used = usageKey && product ? usage[`${usageKey}:${product.key}`] ?? 0 : null;
+  const full = !!product && used !== null && isAtLimit(limit, used) && product.countedTypes.includes(licenseType);
   const coordinator = coordinators.find((c) => c.id === coordinatorId);
   const isDefaultCoordinator = !!coordination && defaultCoordinator[coordination.id] === coordinatorId;
 
   function selectCoordination(id: string) {
     setCoordinationId(id);
-    // O coordenador da coordenação escolhida aparece logo.
+    // O coordenador da unidade escolhida aparece logo.
     setCoordinatorId(defaultCoordinator[id] ?? "");
   }
 
@@ -118,9 +129,9 @@ export default function LicenseRequestForm({
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
       <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
-        <legend className="px-1 text-sm font-semibold">Coordenação</legend>
+        <legend className="px-1 text-sm font-semibold">Unidade</legend>
         <div>
-          <label className="mb-1 block text-sm font-medium">Coordenação</label>
+          <label className="mb-1 block text-sm font-medium">Unidade</label>
           <select
             name="coordinationId"
             required
@@ -128,17 +139,20 @@ export default function LicenseRequestForm({
             onChange={(e) => selectCoordination(e.target.value)}
             className={inputClass}
           >
-            <option value="">Escolhe a coordenação</option>
+            <option value="">Escolhe a unidade</option>
             {coordinations.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
               </option>
             ))}
           </select>
-          {direction && product && (
+          {coordination && direction && product && (
             <p className={`mt-1 text-xs ${full ? "text-red-600" : "text-gray-500"}`}>
-              {direction.name}: {usageText(product, used ?? 0)}
-              {full && " — limite atingido, é preciso libertar uma licença antes de pedir outra."}
+              {product.maxPerUnit ? coordination.label : direction.name}: {usageText(product.name, limit, used ?? 0)}
+              {full &&
+                (limit === 0
+                  ? " — esta unidade não tem licenças atribuídas."
+                  : " — limite atingido, é preciso libertar uma licença antes de pedir outra.")}
             </p>
           )}
         </div>
@@ -152,7 +166,7 @@ export default function LicenseRequestForm({
             disabled={!coordination}
             className={`${inputClass} disabled:bg-gray-50 disabled:text-gray-400`}
           >
-            <option value="">{coordination ? "Escolhe o coordenador" : "Escolhe primeiro a coordenação"}</option>
+            <option value="">{coordination ? "Escolhe o coordenador" : "Escolhe primeiro a unidade"}</option>
             {coordinators.map((c) => {
               const org = formatUserOrg(c);
               return (
@@ -166,10 +180,10 @@ export default function LicenseRequestForm({
           {coordination && (
             <p className="mt-1 text-xs text-gray-500">
               {isDefaultCoordinator
-                ? "Coordenador desta coordenação. Aprova o pedido nesta aplicação."
+                ? "Coordenador desta unidade. Aprova o pedido nesta aplicação."
                 : defaultCoordinator[coordination.id]
-                  ? "Escolheste outro coordenador que não o desta coordenação."
-                  : "Esta coordenação ainda não tem coordenador definido — escolhe quem aprova."}
+                  ? "Escolheste outro coordenador que não o desta unidade."
+                  : "Esta unidade ainda não tem coordenador definido — escolhe quem aprova."}
             </p>
           )}
         </div>

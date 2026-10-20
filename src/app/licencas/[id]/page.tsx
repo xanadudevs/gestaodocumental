@@ -13,9 +13,11 @@ import {
   countActiveLicenses,
   getLicenseProduct,
   isAtLimit,
+  limitFor,
   productName,
   usageText,
 } from "@/lib/licenses";
+import { unitCodeOf } from "@/lib/orgChart";
 import { LicenseStatus } from "@/lib/enums";
 
 export default async function LicenseRequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -39,7 +41,12 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
   if (!request) notFound();
 
   const product = getLicenseProduct(request.product);
-  const used = await countActiveLicenses(prisma, request.directionId, request.product);
+  const used = await countActiveLicenses(
+    prisma,
+    { directionId: request.directionId, coordinationId: request.coordinationId },
+    request.product
+  );
+  const limit = product ? limitFor(product, unitCodeOf(request.coordination.name)) : null;
 
   const canDecide =
     request.status === LicenseStatus.PENDING &&
@@ -52,7 +59,7 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
     ["Email profissional", request.beneficiaryEmail],
     ...(request.jobTitle ? [["Função", request.jobTitle] as [string, React.ReactNode]] : []),
     ["Gestor de Projeto", `${request.superiorName} (${request.superiorEmail})`],
-    ["Coordenação", request.coordination.name],
+    ["Unidade", request.coordination.name],
     ["Direção", request.direction.name],
     ["Coordenador que aprova", request.coordinator.name ?? request.coordinator.email],
     ...(request.project ? [["Projeto / equipa", request.project] as [string, React.ReactNode]] : []),
@@ -94,10 +101,10 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
 
         {product && (
           <p
-            className={`mt-4 rounded-md px-3 py-2 text-sm ${isAtLimit(product, used) ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-600"}`}
+            className={`mt-4 rounded-md px-3 py-2 text-sm ${isAtLimit(limit, used) ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-600"}`}
           >
-            {request.direction.name}: {usageText(product, used)}
-            {canDecide && isAtLimit(product, used) && " — não é possível aprovar sem libertar uma licença."}
+            {product.maxPerUnit ? request.coordination.name : request.direction.name}: {usageText(product.name, limit, used)}
+            {canDecide && isAtLimit(limit, used) && " — não é possível aprovar sem libertar uma licença."}
           </p>
         )}
       </div>

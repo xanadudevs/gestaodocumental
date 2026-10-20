@@ -291,22 +291,34 @@ configuração principal está certa (porta da `DATABASE_URL`, `pgbouncer`,
 ## Licenças (Figma, Copilot, OpenAI)
 
 Menu **Licenças** para pedir e gerir licenças de software: **Figma** (Full ou
-View, máximo de 22 por Direção), **Copilot** e **OpenAI** (licença única,
-sem limite por Direção por enquanto). Os produtos e os limites estão em
-`src/lib/licenses.ts`. Fluxo:
+View, máximo de 22 por Direção), **Copilot** e **OpenAI** (licença única, com
+quota por unidade). Os produtos e os limites estão em `src/lib/licenses.ts`.
+
+| | Copilot | OpenAI | Total |
+|---|---|---|---|
+| Direção (Diretor 1 + Assessoria 1) | 2 | – | 2 |
+| UPACE, UID, UIA, URN (cada) | 2 | 3 | 5 |
+| Reserva (sem atribuir) | – | 3 | 3 |
+| **Total** | **10** | **15** | **25** |
+
+A quota conta-se por **coordenação**: o pedido só é aceite (ao pedir e ao
+aprovar) se a unidade ainda tiver licenças livres, e as 3 licenças OpenAI de
+reserva só se atribuem alterando as quotas. Os pedidos do Diretor e da
+Assessoria fazem-se escolhendo a própria Direção no campo **Unidade**.
+Fluxo:
 
 1. Qualquer pessoa preenche **Pedir licença** em `/licencas/nova` —
    **não precisa de login** (há um atalho na página de login). Escolhe
-   primeiro a coordenação e o respetivo coordenador aparece logo
+   primeiro a unidade (a Direção ou uma coordenação) e o respetivo coordenador aparece logo
    preenchido; depois o software e o tipo (Full/View no Figma), nome e email profissional do
    beneficiário, função, gestor de projeto, projeto e justificação.
 2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
    contador no menu) e aprova ou rejeita (motivo obrigatório) **na
    própria aplicação**. Quem pediu pode copiar a ligação do pedido para a
    enviar ao coordenador (Teams, etc.).
-3. Ao aprovar, o sistema valida o **máximo de licenças por Direção** do
-   produto, quando há limite (Figma: 22; contam as licenças aprovadas e as
-   já atribuídas, Full e View). A
+3. Ao aprovar, o sistema valida o **limite** do produto (Figma: máximo de 22
+   por Direção; Copilot e OpenAI: quota da coordenação; contam as licenças
+   aprovadas e as já atribuídas). A
    validação corre numa transação serializável, por isso duas aprovações
    em simultâneo nunca ultrapassam o limite. Também não deixa submeter
    pedidos novos com a Direção cheia, nem dois pedidos em curso para o

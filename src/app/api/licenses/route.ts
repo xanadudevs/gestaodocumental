@@ -9,11 +9,12 @@ import {
   countActiveLicenses,
   getLicenseProduct,
   isAtLimit,
+  limitFor,
   productName,
   resolveDirection,
 } from "@/lib/licenses";
 import { licenseRequestMailInclude, notify, requestedMail } from "@/lib/licenseMail";
-import { COORDINATION_NAMES } from "@/lib/orgChart";
+import { COORDINATION_NAMES, ORG_CHART, unitCodeOf } from "@/lib/orgChart";
 
 const schema = z.object({
   product: z.string(),
@@ -23,7 +24,7 @@ const schema = z.object({
   jobTitle: z.string().trim().optional(),
   superiorName: z.string().trim().min(1, "Nome do gestor de projeto em falta"),
   superiorEmail: z.string().trim().toLowerCase().email("Email do gestor de projeto inválido"),
-  coordinationId: z.string().min(1, "Coordenação em falta"),
+  coordinationId: z.string().min(1, "Unidade em falta"),
   coordinatorId: z.string().min(1, "Coordenador em falta"),
   project: z.string().trim().optional(),
   justification: z.string().trim().min(1, "Justificação em falta"),
@@ -50,8 +51,9 @@ export async function POST(req: NextRequest) {
   }
 
   const coordination = await prisma.unit.findUnique({ where: { id: data.coordinationId }, select: { name: true } });
-  if (!coordination || !COORDINATION_NAMES.has(coordination.name)) {
-    return NextResponse.json({ error: "Escolhe uma das coordenações da DANAD" }, { status: 400 });
+  // Coordenações da DANAD ou a própria Direção (ex: licenças do Diretor e da Assessoria).
+  if (!coordination || !(COORDINATION_NAMES.has(coordination.name) || coordination.name === ORG_CHART.name)) {
+    return NextResponse.json({ error: "Escolhe uma das unidades da DANAD" }, { status: 400 });
   }
 
   const direction = await resolveDirection(prisma, data.coordinationId);
@@ -87,11 +89,20 @@ export async function POST(req: NextRequest) {
   }
 
   if (product.countedTypes.includes(data.licenseType)) {
-    const active = await countActiveLicenses(prisma, direction.id, product.key);
-    if (isAtLimit(product, active)) {
+    const limit = limitFor(product, unitCodeOf(coordination.name));
+    const active = await countActiveLicenses(
+      prisma,
+      { directionId: direction.id, coordinationId: data.coordinationId },
+      product.key
+    );
+    if (isAtLimit(limit, active)) {
+      const who = product.maxPerUnit ? coordination.name : direction.name;
       return NextResponse.json(
         {
-          error: `A ${direction.name} já tem ${active} de ${product.maxPerDirection} licenças ${product.name} ocupadas. É preciso libertar uma antes de pedir outra.`,
+          error:
+            limit === 0
+              ? `${who} não tem licenças ${product.name} atribuídas.`
+              : `${who} já tem ${active} de ${limit} licenças ${product.name} ocupadas. É preciso libertar uma antes de pedir outra.`,
         },
         { status: 409 }
       );
