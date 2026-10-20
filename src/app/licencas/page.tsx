@@ -176,7 +176,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
             <span className="text-gray-500">
               {" "}
               — {used} de {total} licenças ocupadas
-              {p.reserve ? ` (${p.reserve} de reserva, sem atribuir a nenhuma unidade)` : ""}
+              {p.reserve ? ` (inclui ${p.reserve} de reserva)` : ""}
             </span>
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -204,6 +204,21 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
                 </Link>
               );
             })}
+            {/* Licenças ainda sem unidade: bem à vista para não se perderem. */}
+            {p.reserve ? (
+              <div className="rounded-md border-2 border-dashed border-amber-400 bg-amber-50 p-3">
+                <p className="text-xs font-medium text-amber-800">Reserva — sem atribuir a nenhuma unidade</p>
+                <p className="mt-1 text-sm">
+                  <span className="text-lg font-semibold text-amber-900">{p.reserve}</span>
+                  <span className="text-amber-800"> licenças {p.name} de reserva</span>
+                </p>
+                <div className="mt-2 flex gap-1" aria-hidden="true">
+                  {Array.from({ length: p.reserve }).map((_, i) => (
+                    <span key={i} className="h-4 w-4 rounded-sm border border-amber-500 bg-amber-200" />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ))}
@@ -267,6 +282,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
             direction: r.direction.name,
             coordinator: r.coordinator.name ?? r.coordinator.email ?? "—",
             createdAt: r.createdAt.toISOString(),
+            canGrant: isSupport && r.status === LicenseStatus.APPROVED,
             canDecide:
               r.status === LicenseStatus.PENDING && canDecideOnLicense(session.user.role, r.coordinatorId, session.user.id),
           }))}

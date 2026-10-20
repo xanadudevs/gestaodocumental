@@ -333,7 +333,9 @@ Fluxo:
 escolhe os pedidos com as caixas de seleção (ou "Selecionar todos") e carrega em
 "Aprovar selecionados". Cada pedido passa pelas mesmas validações da aprovação
 individual (só o coordenador indicado, só pendentes, quota da unidade); os que
-falharem ficam por aprovar, com o motivo.
+falharem ficam por aprovar, com o motivo. O Apoio Administrativo faz o mesmo em
+"Para dar acesso": escolhe os pedidos (ou "Selecionar todos") e carrega em "Dar
+acesso aos selecionados".
 
 **Editar licenças:** o botão "Editar" na página do pedido deixa corrigir o
 beneficiário, o software e tipo, a unidade, o coordenador, o gestor de projeto, o
