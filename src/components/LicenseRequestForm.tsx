@@ -38,6 +38,7 @@ export default function LicenseRequestForm({
   usage,
   defaults,
   isLoggedIn,
+  edit,
 }: {
   products: Product[];
   coordinations: CoordinationOption[];
@@ -49,12 +50,30 @@ export default function LicenseRequestForm({
   usage: Record<string, number>;
   defaults: { name: string; email: string };
   isLoggedIn: boolean;
+  // Modo edição: altera um pedido existente em vez de criar um novo.
+  edit?: {
+    id: string;
+    initial: {
+      product: string;
+      licenseType: string;
+      coordinationId: string;
+      coordinatorId: string;
+      beneficiaryName: string;
+      beneficiaryEmail: string;
+      jobTitle: string;
+      superiorName: string;
+      superiorEmail: string;
+      project: string;
+      justification: string;
+    };
+  };
 }) {
   const router = useRouter();
-  const [productKey, setProductKey] = useState(products[0]?.key ?? "");
-  const [licenseType, setLicenseType] = useState(products[0]?.types[0] ?? "");
-  const [coordinationId, setCoordinationId] = useState("");
-  const [coordinatorId, setCoordinatorId] = useState("");
+  const initial = edit?.initial;
+  const [productKey, setProductKey] = useState(initial?.product ?? products[0]?.key ?? "");
+  const [licenseType, setLicenseType] = useState(initial?.licenseType ?? products[0]?.types[0] ?? "");
+  const [coordinationId, setCoordinationId] = useState(initial?.coordinationId ?? "");
+  const [coordinatorId, setCoordinatorId] = useState(initial?.coordinatorId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<string | null>(null);
@@ -65,7 +84,8 @@ export default function LicenseRequestForm({
   const limit = product ? limitFor(product, coordination?.code) : null;
   const usageKey = product?.maxPerUnit ? coordination?.id : direction?.id;
   const used = usageKey && product ? usage[`${usageKey}:${product.key}`] ?? 0 : null;
-  const full = !!product && used !== null && isAtLimit(limit, used) && product.countedTypes.includes(licenseType);
+  // Na edição é o servidor que valida a quota (o próprio pedido já pode ocupar um lugar).
+  const full = !edit && !!product && used !== null && isAtLimit(limit, used) && product.countedTypes.includes(licenseType);
   const coordinator = coordinators.find((c) => c.id === coordinatorId);
   const isDefaultCoordinator = !!coordination && defaultCoordinator[coordination.id] === coordinatorId;
 
@@ -82,13 +102,18 @@ export default function LicenseRequestForm({
     const form = e.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
     try {
-      const res = await fetch("/api/licenses", {
-        method: "POST",
+      const res = await fetch(edit ? `/api/licenses/${edit.id}` : "/api/licenses", {
+        method: edit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Erro ao submeter pedido");
+      if (edit) {
+        router.push(`/licencas/${edit.id}`);
+        router.refresh();
+        return;
+      }
       if (isLoggedIn && body.id) {
         router.push(`/licencas/${body.id}`);
         router.refresh();
@@ -235,7 +260,7 @@ export default function LicenseRequestForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Nome completo</label>
-            <input name="beneficiaryName" required defaultValue={defaults.name} className={inputClass} />
+            <input name="beneficiaryName" required defaultValue={initial?.beneficiaryName ?? defaults.name} className={inputClass} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Email profissional</label>
@@ -243,14 +268,14 @@ export default function LicenseRequestForm({
               name="beneficiaryEmail"
               type="email"
               required
-              defaultValue={defaults.email}
+              defaultValue={initial?.beneficiaryEmail ?? defaults.email}
               placeholder="nome.apelido@spms.min-saude.pt"
               className={inputClass}
             />
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium">Função (opcional)</label>
-            <input name="jobTitle" placeholder="Ex: UX Designer" className={inputClass} />
+            <input name="jobTitle" defaultValue={initial?.jobTitle} placeholder="Ex: UX Designer" className={inputClass} />
           </div>
         </div>
       </fieldset>
@@ -260,11 +285,11 @@ export default function LicenseRequestForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">Nome</label>
-            <input name="superiorName" required className={inputClass} />
+            <input name="superiorName" required defaultValue={initial?.superiorName} className={inputClass} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
-            <input name="superiorEmail" type="email" required className={inputClass} />
+            <input name="superiorEmail" type="email" required defaultValue={initial?.superiorEmail} className={inputClass} />
           </div>
         </div>
       </fieldset>
@@ -273,13 +298,14 @@ export default function LicenseRequestForm({
         <legend className="px-1 text-sm font-semibold">Enquadramento</legend>
         <div>
           <label className="mb-1 block text-sm font-medium">Projeto / equipa (opcional)</label>
-          <input name="project" className={inputClass} />
+          <input name="project" defaultValue={initial?.project} className={inputClass} />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Justificação</label>
           <textarea
             name="justification"
             required
+            defaultValue={initial?.justification}
             rows={3}
             placeholder="Para que vai ser usada a licença"
             className={inputClass}
@@ -294,7 +320,7 @@ export default function LicenseRequestForm({
         disabled={submitting || full}
         className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
-        {submitting ? "A submeter..." : "Submeter pedido"}
+        {submitting ? (edit ? "A guardar..." : "A submeter...") : edit ? "Guardar alterações" : "Submeter pedido"}
       </button>
     </form>
   );

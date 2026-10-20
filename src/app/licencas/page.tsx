@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LicenseTable from "@/components/LicenseTable";
 import { COORDINATION_NAMES, ORG_CHART, unitCodeOf, unitLabel } from "@/lib/orgChart";
-import { canManageLicenses } from "@/lib/permissions";
+import { canDecideOnLicense, canManageLicenses } from "@/lib/permissions";
 import { LICENSE_PRODUCTS, getDirectionUsage, productName } from "@/lib/licenses";
 import { isAtLimit, limitFor } from "@/lib/licenseUsage";
 import { LicenseStatus, Role } from "@/lib/enums";
@@ -267,6 +267,8 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
             direction: r.direction.name,
             coordinator: r.coordinator.name ?? r.coordinator.email ?? "—",
             createdAt: r.createdAt.toISOString(),
+            canDecide:
+              r.status === LicenseStatus.PENDING && canDecideOnLicense(session.user.role, r.coordinatorId, session.user.id),
           }))}
         />
       )}

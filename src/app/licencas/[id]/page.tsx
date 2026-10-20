@@ -7,7 +7,7 @@ import LicenseStatusBadge from "@/components/LicenseStatusBadge";
 import LicenseActions from "@/components/LicenseActions";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { LICENSE_ACTION_LABELS, LICENSE_TYPE_LABELS, formatDate } from "@/lib/labels";
-import { canDecideOnLicense, canManageLicenses } from "@/lib/permissions";
+import { canDecideOnLicense, canEditLicense, canManageLicenses } from "@/lib/permissions";
 import {
   ACTIVE_LICENSE_STATUSES,
   countActiveLicenses,
@@ -52,6 +52,7 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
     request.status === LicenseStatus.PENDING &&
     canDecideOnLicense(session.user.role, request.coordinatorId, session.user.id);
   const isSupport = canManageLicenses(session.user.role);
+  const canEdit = canEditLicense(session.user.role, request.status, request.coordinatorId, session.user.id);
   const canGrant = isSupport && request.status === LicenseStatus.APPROVED;
   const canRevoke = isSupport && ACTIVE_LICENSE_STATUSES.includes(request.status);
 
@@ -87,7 +88,17 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
               {productName(request.product)} {LICENSE_TYPE_LABELS[request.licenseType] ?? request.licenseType}
             </p>
           </div>
-          <LicenseStatusBadge status={request.status} />
+          <div className="flex items-center gap-3">
+            {canEdit && (
+              <Link
+                href={`/licencas/${request.id}/editar`}
+                className="rounded-md border px-3 py-1 text-sm font-medium text-brand-700 hover:bg-brand-50"
+              >
+                Editar
+              </Link>
+            )}
+            <LicenseStatusBadge status={request.status} />
+          </div>
         </div>
 
         <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">

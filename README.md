@@ -329,6 +329,19 @@ Fluxo:
 5. Quando a licença deixa de ser precisa, o Apoio Administrativo carrega
    em **"Libertar licença"**, que liberta o lugar na Direção.
 
+**Aprovar vários de uma vez:** em Licenças (ex: no separador "Para eu aprovar"),
+escolhe os pedidos com as caixas de seleção (ou "Selecionar todos") e carrega em
+"Aprovar selecionados". Cada pedido passa pelas mesmas validações da aprovação
+individual (só o coordenador indicado, só pendentes, quota da unidade); os que
+falharem ficam por aprovar, com o motivo.
+
+**Editar licenças:** o botão "Editar" na página do pedido deixa corrigir o
+beneficiário, o software e tipo, a unidade, o coordenador, o gestor de projeto, o
+projeto e a justificação. Pode editar o Administrador e o Gestor de Licenças (em
+qualquer estado) e o coordenador indicado (enquanto o pedido está pendente). Se a
+licença já está aprovada ou atribuída, a nova combinação tem de caber na quota. As
+alterações ficam no histórico.
+
 Um **Administrador** pode apagar pedidos (ex: pedidos de teste): na lista
 de Licenças escolhe-os com as caixas de seleção e carrega em "Apagar
 selecionados". O histórico de cada pedido é apagado com ele.
