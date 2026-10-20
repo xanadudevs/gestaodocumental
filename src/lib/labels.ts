@@ -75,6 +75,7 @@ export const ROLE_LABELS: Record<string, string> = {
 export const LICENSE_TYPE_LABELS: Record<string, string> = {
   FULL: "Full",
   VIEW: "View",
+  STANDARD: "Licença",
 };
 
 export const LICENSE_STATUS_LABELS: Record<string, string> = {

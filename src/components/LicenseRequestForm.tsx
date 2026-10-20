@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LICENSE_TYPE_LABELS, formatUserOrg } from "@/lib/labels";
+import { isAtLimit, usageText } from "@/lib/licenseUsage";
 
-type Product = { key: string; name: string; types: string[]; maxPerDirection: number; countedTypes: string[] };
+type Product = { key: string; name: string; types: string[]; maxPerDirection: number | null; countedTypes: string[] };
 type CoordinationOption = {
   id: string;
   label: string;
@@ -53,7 +54,7 @@ export default function LicenseRequestForm({
   const direction = coordination?.direction ?? null;
   const used = direction && product ? usage[`${direction.id}:${product.key}`] ?? 0 : null;
   const full =
-    !!product && used !== null && used >= product.maxPerDirection && product.countedTypes.includes(licenseType);
+    !!product && used !== null && isAtLimit(product, used) && product.countedTypes.includes(licenseType);
   const coordinator = coordinators.find((c) => c.id === coordinatorId);
   const isDefaultCoordinator = !!coordination && defaultCoordinator[coordination.id] === coordinatorId;
 
@@ -136,7 +137,7 @@ export default function LicenseRequestForm({
           </select>
           {direction && product && (
             <p className={`mt-1 text-xs ${full ? "text-red-600" : "text-gray-500"}`}>
-              {direction.name}: {used} de {product.maxPerDirection} licenças {product.name} ocupadas
+              {direction.name}: {usageText(product, used ?? 0)}
               {full && " — limite atingido, é preciso libertar uma licença antes de pedir outra."}
             </p>
           )}

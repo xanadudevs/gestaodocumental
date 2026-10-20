@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canDecideOnLicense } from "@/lib/permissions";
 import { LicenseAction, LicenseStatus } from "@/lib/enums";
-import { countActiveLicenses, getLicenseProduct } from "@/lib/licenses";
+import { countActiveLicenses, getLicenseProduct, isAtLimit } from "@/lib/licenses";
 import { approvedMail, licenseRequestMailInclude, notify, rejectedMail } from "@/lib/licenseMail";
 
 class ConflictError extends Error {}
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         async (tx) => {
           if (decision === LicenseStatus.APPROVED && product?.countedTypes.includes(request.licenseType as never)) {
             const active = await countActiveLicenses(tx, request.directionId, request.product);
-            if (active >= product.maxPerDirection) {
+            if (isAtLimit(product, active)) {
               throw new ConflictError(
                 `Limite atingido: a Direção já tem ${active} de ${product.maxPerDirection} licenças ${product.name} ocupadas. Liberta uma licença antes de aprovar.`,
               );

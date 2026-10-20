@@ -8,6 +8,7 @@ import {
   OPEN_LICENSE_STATUSES,
   countActiveLicenses,
   getLicenseProduct,
+  isAtLimit,
   productName,
   resolveDirection,
 } from "@/lib/licenses";
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   if (product.countedTypes.includes(data.licenseType)) {
     const active = await countActiveLicenses(prisma, direction.id, product.key);
-    if (active >= product.maxPerDirection) {
+    if (isAtLimit(product, active)) {
       return NextResponse.json(
         {
           error: `A ${direction.name} já tem ${active} de ${product.maxPerDirection} licenças ${product.name} ocupadas. É preciso libertar uma antes de pedir outra.`,

@@ -7,7 +7,7 @@ de Dados:
   emails, ofícios, documentos externos) que chegam ao Diretor e descem para
   coordenadores/gestores, pareceres que sobem, e informações/ofícios feitos
   com os templates Word da SPMS (ver secção [Documentos](#documentos)).
-- **Licenças** — pedidos de licenças de software (ex: Figma) com
+- **Licenças** — pedidos de licenças de software (Figma, Copilot, OpenAI) com
   aprovação do coordenador e limite por Direção (ver secção
   [Licenças](#licenças-ex-figma)).
 
@@ -288,22 +288,25 @@ configuração principal está certa (porta da `DATABASE_URL`, `pgbouncer`,
    coordenadores que ainda não existem são criados sem login — define-lhes
    utilizador e password em "Editar". É seguro clicar mais do que uma vez.
 
-## Licenças (ex: Figma)
+## Licenças (Figma, Copilot, OpenAI)
 
-Menu **Licenças** para pedir e gerir licenças de software, hoje só Figma
-(Full ou View). Fluxo:
+Menu **Licenças** para pedir e gerir licenças de software: **Figma** (Full ou
+View, máximo de 22 por Direção), **Copilot** e **OpenAI** (licença única,
+sem limite por Direção por enquanto). Os produtos e os limites estão em
+`src/lib/licenses.ts`. Fluxo:
 
 1. Qualquer pessoa preenche **Pedir licença** em `/licencas/nova` —
    **não precisa de login** (há um atalho na página de login). Escolhe
    primeiro a coordenação e o respetivo coordenador aparece logo
-   preenchido; depois o tipo (Full/View), nome e email profissional do
+   preenchido; depois o software e o tipo (Full/View no Figma), nome e email profissional do
    beneficiário, função, gestor de projeto, projeto e justificação.
 2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um
    contador no menu) e aprova ou rejeita (motivo obrigatório) **na
    própria aplicação**. Quem pediu pode copiar a ligação do pedido para a
    enviar ao coordenador (Teams, etc.).
-3. Ao aprovar, o sistema valida o **máximo de 22 licenças por Direção**
-   (contam as licenças aprovadas e as já atribuídas, Full e View). A
+3. Ao aprovar, o sistema valida o **máximo de licenças por Direção** do
+   produto, quando há limite (Figma: 22; contam as licenças aprovadas e as
+   já atribuídas, Full e View). A
    validação corre numa transação serializável, por isso duas aprovações
    em simultâneo nunca ultrapassam o limite. Também não deixa submeter
    pedidos novos com a Direção cheia, nem dois pedidos em curso para o
@@ -322,8 +325,9 @@ Todos os pedidos são da DANAD: a Direção de cada pedido é sempre a raiz do
 organigrama. Aplicar a estrutura organizacional corrige pedidos antigos que
 tenham ficado associados a outra unidade de topo.
 
-A página Licenças mostra as licenças de toda a gente, com filtros Full /
-View e por estado, e a ocupação de cada Direção (X / 22).
+A página Licenças mostra as licenças de toda a gente, com filtros por
+software, tipo (Full / View / Licença) e estado, e a ocupação de cada Direção
+por produto (ex: 3 / 22 no Figma).
 
 Configuração:
 
