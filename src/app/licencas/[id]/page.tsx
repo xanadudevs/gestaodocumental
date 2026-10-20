@@ -8,7 +8,14 @@ import LicenseActions from "@/components/LicenseActions";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import { LICENSE_ACTION_LABELS, LICENSE_TYPE_LABELS, formatDate } from "@/lib/labels";
 import { canDecideOnLicense, canManageLicenses } from "@/lib/permissions";
-import { ACTIVE_LICENSE_STATUSES, countActiveLicenses, getLicenseProduct, productName } from "@/lib/licenses";
+import {
+  ACTIVE_LICENSE_STATUSES,
+  countActiveLicenses,
+  getLicenseProduct,
+  isAtLimit,
+  productName,
+  usageText,
+} from "@/lib/licenses";
 import { LicenseStatus } from "@/lib/enums";
 
 export default async function LicenseRequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -87,10 +94,10 @@ export default async function LicenseRequestPage({ params }: { params: Promise<{
 
         {product && (
           <p
-            className={`mt-4 rounded-md px-3 py-2 text-sm ${used >= product.maxPerDirection ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-600"}`}
+            className={`mt-4 rounded-md px-3 py-2 text-sm ${isAtLimit(product, used) ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-600"}`}
           >
-            {request.direction.name}: {used} de {product.maxPerDirection} licenças {product.name} ocupadas
-            {canDecide && used >= product.maxPerDirection && " — não é possível aprovar sem libertar uma licença."}
+            {request.direction.name}: {usageText(product, used)}
+            {canDecide && isAtLimit(product, used) && " — não é possível aprovar sem libertar uma licença."}
           </p>
         )}
       </div>

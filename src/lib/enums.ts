@@ -90,6 +90,8 @@ export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const LicenseType = {
   FULL: "FULL",
   VIEW: "VIEW",
+  // Licença única, para produtos sem tipos (Copilot, OpenAI).
+  STANDARD: "STANDARD",
 } as const;
 export type LicenseType = (typeof LicenseType)[keyof typeof LicenseType];
 

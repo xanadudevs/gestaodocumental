@@ -8,9 +8,10 @@ import LicenseTable from "@/components/LicenseTable";
 import { unitLabel } from "@/lib/orgChart";
 import { canManageLicenses } from "@/lib/permissions";
 import { LICENSE_PRODUCTS, getDirectionUsage, productName } from "@/lib/licenses";
+import { isAtLimit } from "@/lib/licenseUsage";
 import { LicenseStatus, Role } from "@/lib/enums";
 
-type SearchParams = { scope?: string; type?: string; status?: string; direction?: string };
+type SearchParams = { scope?: string; type?: string; status?: string; direction?: string; product?: string };
 
 export default async function LicensesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const session = await getServerSession(authOptions);
@@ -18,11 +19,12 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
 
   const params = await searchParams;
   const scope = params.scope ?? "all";
-  const { type, status, direction } = params;
+  const { type, status, direction, product } = params;
   const isSupport = canManageLicenses(session.user.role);
 
   const where: Prisma.LicenseRequestWhereInput = {};
   if (type) where.licenseType = type;
+  if (product) where.product = product;
   if (status === "ACTIVE") where.status = { in: [LicenseStatus.APPROVED, LicenseStatus.GRANTED] };
   else if (status) where.status = status;
   if (direction) where.directionId = direction;
@@ -65,9 +67,10 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
   ];
 
   const typeFilters = [
-    { key: undefined, label: "Full e View" },
+    { key: undefined, label: "Todos os tipos" },
     { key: "FULL", label: "Full" },
     { key: "VIEW", label: "View" },
+    { key: "STANDARD", label: "Licença" },
   ];
   const statusFilters = [
     { key: undefined, label: "Todos os estados" },
@@ -80,12 +83,13 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
   ];
 
   function hrefFor(next: Partial<SearchParams>) {
-    const merged = { scope, type, status, direction, ...next };
+    const merged = { scope, type, status, direction, product, ...next };
     const qs = new URLSearchParams();
     if (merged.scope && merged.scope !== "all") qs.set("scope", merged.scope);
     if (merged.type) qs.set("type", merged.type);
     if (merged.status) qs.set("status", merged.status);
     if (merged.direction) qs.set("direction", merged.direction);
+    if (merged.product) qs.set("product", merged.product);
     const s = qs.toString();
     return `/licencas${s ? `?${s}` : ""}`;
   }
@@ -110,7 +114,7 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
           {directions.map((d) =>
             LICENSE_PRODUCTS.map((p) => {
               const used = usage[`${d.id}:${p.key}`] ?? 0;
-              const pct = Math.min(100, Math.round((used / p.maxPerDirection) * 100));
+              const pct = p.maxPerDirection === null ? 0 : Math.min(100, Math.round((used / p.maxPerDirection) * 100));
               const selected = direction === d.id;
               return (
                 <Link
@@ -125,15 +129,17 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
                     <span className="text-lg font-semibold">{used}</span>
                     <span className="text-gray-500">
                       {" "}
-                      / {p.maxPerDirection} licenças {p.name}
+                      {p.maxPerDirection === null ? ` licenças ${p.name}` : ` / ${p.maxPerDirection} licenças ${p.name}`}
                     </span>
                   </p>
-                  <div className="mt-2 h-1.5 rounded-full bg-gray-100">
-                    <div
-                      className={`h-1.5 rounded-full ${used >= p.maxPerDirection ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-brand-500"}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                  {p.maxPerDirection !== null && (
+                    <div className="mt-2 h-1.5 rounded-full bg-gray-100">
+                      <div
+                        className={`h-1.5 rounded-full ${isAtLimit(p, used) ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-brand-500"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
                 </Link>
               );
             })
@@ -155,6 +161,16 @@ export default async function LicensesPage({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
+      <div className="mb-2 flex flex-wrap gap-2">
+        <Link href={hrefFor({ product: undefined })} className={chip(!product)}>
+          Todos os softwares
+        </Link>
+        {LICENSE_PRODUCTS.map((p) => (
+          <Link key={p.key} href={hrefFor({ product: p.key })} className={chip(product === p.key)}>
+            {p.name}
+          </Link>
+        ))}
+      </div>
       <div className="mb-2 flex flex-wrap gap-2">
         {typeFilters.map((f) => (
           <Link key={f.key ?? "all"} href={hrefFor({ type: f.key })} className={chip(type === f.key)}>

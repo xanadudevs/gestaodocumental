@@ -1,13 +1,15 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { LicenseStatus, LicenseType } from "@/lib/enums";
 import { ORG_CHART } from "@/lib/orgChart";
+export { isAtLimit, usageText } from "@/lib/licenseUsage";
 
 export type LicenseProductConfig = {
   key: string;
   name: string;
   types: LicenseType[];
-  // Máximo de licenças ativas (aprovadas ou já atribuídas) por Direção.
-  maxPerDirection: number;
+  // Máximo de licenças ativas (aprovadas ou já atribuídas) por Direção;
+  // null = sem limite.
+  maxPerDirection: number | null;
   // Tipos de licença que contam para esse máximo.
   countedTypes: LicenseType[];
 };
@@ -21,6 +23,20 @@ export const LICENSE_PRODUCTS: LicenseProductConfig[] = [
     types: [LicenseType.FULL, LicenseType.VIEW],
     maxPerDirection: 22,
     countedTypes: [LicenseType.FULL, LicenseType.VIEW],
+  },
+  {
+    key: "COPILOT",
+    name: "Copilot",
+    types: [LicenseType.STANDARD],
+    maxPerDirection: null,
+    countedTypes: [LicenseType.STANDARD],
+  },
+  {
+    key: "OPENAI",
+    name: "OpenAI",
+    types: [LicenseType.STANDARD],
+    maxPerDirection: null,
+    countedTypes: [LicenseType.STANDARD],
   },
 ];
 
