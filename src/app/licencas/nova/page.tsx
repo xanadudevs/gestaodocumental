@@ -63,7 +63,7 @@ export default async function NewLicenseRequestPage() {
     <div>
       <h1 className="mb-1 text-xl font-semibold">Pedir licença</h1>
       <p className="mb-5 text-sm text-gray-500">
-        Escolhe a coordenação — o respetivo coordenador aprova o pedido nesta aplicação. Depois de aprovado, o
+        Escolhe a unidade (a Direção ou uma das coordenações) — o respetivo coordenador aprova o pedido nesta aplicação. Depois de aprovado, o
         Gestor de Licenças dá o acesso.
         {!session && (
           <>

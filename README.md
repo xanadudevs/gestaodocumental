@@ -304,12 +304,12 @@ quota por unidade). Os produtos e os limites estão em `src/lib/licenses.ts`.
 A quota conta-se por **coordenação**: o pedido só é aceite (ao pedir e ao
 aprovar) se a unidade ainda tiver licenças livres, e as 3 licenças OpenAI de
 reserva só se atribuem alterando as quotas. Os pedidos do Diretor e da
-Assessoria fazem-se escolhendo a própria Direção na lista de coordenações.
+Assessoria fazem-se escolhendo a própria Direção no campo **Unidade**.
 Fluxo:
 
 1. Qualquer pessoa preenche **Pedir licença** em `/licencas/nova` —
    **não precisa de login** (há um atalho na página de login). Escolhe
-   primeiro a coordenação e o respetivo coordenador aparece logo
+   primeiro a unidade (a Direção ou uma coordenação) e o respetivo coordenador aparece logo
    preenchido; depois o software e o tipo (Full/View no Figma), nome e email profissional do
    beneficiário, função, gestor de projeto, projeto e justificação.
 2. O coordenador vê o pedido em **Licenças → Para eu aprovar** (com um

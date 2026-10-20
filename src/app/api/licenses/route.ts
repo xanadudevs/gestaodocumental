@@ -24,7 +24,7 @@ const schema = z.object({
   jobTitle: z.string().trim().optional(),
   superiorName: z.string().trim().min(1, "Nome do gestor de projeto em falta"),
   superiorEmail: z.string().trim().toLowerCase().email("Email do gestor de projeto inválido"),
-  coordinationId: z.string().min(1, "Coordenação em falta"),
+  coordinationId: z.string().min(1, "Unidade em falta"),
   coordinatorId: z.string().min(1, "Coordenador em falta"),
   project: z.string().trim().optional(),
   justification: z.string().trim().min(1, "Justificação em falta"),
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const coordination = await prisma.unit.findUnique({ where: { id: data.coordinationId }, select: { name: true } });
   // Coordenações da DANAD ou a própria Direção (ex: licenças do Diretor e da Assessoria).
   if (!coordination || !(COORDINATION_NAMES.has(coordination.name) || coordination.name === ORG_CHART.name)) {
-    return NextResponse.json({ error: "Escolhe uma das coordenações da DANAD" }, { status: 400 });
+    return NextResponse.json({ error: "Escolhe uma das unidades da DANAD" }, { status: 400 });
   }
 
   const direction = await resolveDirection(prisma, data.coordinationId);

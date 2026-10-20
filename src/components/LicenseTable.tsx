@@ -92,7 +92,7 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
               )}
               <th className="px-4 py-2">Beneficiário</th>
               <th className="px-4 py-2">Licença</th>
-              <th className="px-4 py-2">Coordenação / Direção</th>
+              <th className="px-4 py-2">Unidade / Direção</th>
               <th className="px-4 py-2">Coordenador</th>
               <th className="px-4 py-2">Estado</th>
               <th className="px-4 py-2">Pedido</th>

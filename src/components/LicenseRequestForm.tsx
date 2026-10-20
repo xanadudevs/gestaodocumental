@@ -42,7 +42,7 @@ export default function LicenseRequestForm({
   products: Product[];
   coordinations: CoordinationOption[];
   coordinators: Coordinator[];
-  // coordenador de cada coordenação: unitId -> userId
+  // coordenador de cada unidade: unitId -> userId
   defaultCoordinator: Record<string, string>;
   // licenças ocupadas por `${directionId}:${product}` (máximo por Direção) ou
   // `${coordinationId}:${product}` (quota por unidade)
@@ -71,7 +71,7 @@ export default function LicenseRequestForm({
 
   function selectCoordination(id: string) {
     setCoordinationId(id);
-    // O coordenador da coordenação escolhida aparece logo.
+    // O coordenador da unidade escolhida aparece logo.
     setCoordinatorId(defaultCoordinator[id] ?? "");
   }
 
@@ -129,9 +129,9 @@ export default function LicenseRequestForm({
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
       <fieldset className="flex flex-col gap-4 rounded-md border bg-white p-4">
-        <legend className="px-1 text-sm font-semibold">Coordenação</legend>
+        <legend className="px-1 text-sm font-semibold">Unidade</legend>
         <div>
-          <label className="mb-1 block text-sm font-medium">Coordenação</label>
+          <label className="mb-1 block text-sm font-medium">Unidade</label>
           <select
             name="coordinationId"
             required
@@ -139,7 +139,7 @@ export default function LicenseRequestForm({
             onChange={(e) => selectCoordination(e.target.value)}
             className={inputClass}
           >
-            <option value="">Escolhe a coordenação</option>
+            <option value="">Escolhe a unidade</option>
             {coordinations.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
@@ -166,7 +166,7 @@ export default function LicenseRequestForm({
             disabled={!coordination}
             className={`${inputClass} disabled:bg-gray-50 disabled:text-gray-400`}
           >
-            <option value="">{coordination ? "Escolhe o coordenador" : "Escolhe primeiro a coordenação"}</option>
+            <option value="">{coordination ? "Escolhe o coordenador" : "Escolhe primeiro a unidade"}</option>
             {coordinators.map((c) => {
               const org = formatUserOrg(c);
               return (
@@ -180,10 +180,10 @@ export default function LicenseRequestForm({
           {coordination && (
             <p className="mt-1 text-xs text-gray-500">
               {isDefaultCoordinator
-                ? "Coordenador desta coordenação. Aprova o pedido nesta aplicação."
+                ? "Coordenador desta unidade. Aprova o pedido nesta aplicação."
                 : defaultCoordinator[coordination.id]
-                  ? "Escolheste outro coordenador que não o desta coordenação."
-                  : "Esta coordenação ainda não tem coordenador definido — escolhe quem aprova."}
+                  ? "Escolheste outro coordenador que não o desta unidade."
+                  : "Esta unidade ainda não tem coordenador definido — escolhe quem aprova."}
             </p>
           )}
         </div>
