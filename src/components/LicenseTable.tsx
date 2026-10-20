@@ -17,23 +17,60 @@ export type LicenseRow = {
   direction: string;
   coordinator: string;
   createdAt: string;
+  // O utilizador pode aprovar este pedido (pendente e é o coordenador indicado, ou Admin).
+  canDecide: boolean;
 };
 
-// Tabela de licenças. Com `canDelete` (ADMIN), permite escolher pedidos e
+// Tabela de licenças. Permite escolher pedidos: aprovar vários de uma vez (os
+// pendentes de que o utilizador é o coordenador) e, com `canDelete` (ADMIN),
 // apagá-los (ex: pedidos de teste).
 export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; canDelete: boolean }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  // Quem só aprova escolhe apenas os pedidos que pode aprovar.
+  const selectable = rows.filter((r) => canDelete || r.canDecide);
+  const showSelect = selectable.length > 0;
+  const allSelected = selectable.length > 0 && selectable.every((r) => selected.has(r.id));
+  const toApprove = rows.filter((r) => selected.has(r.id) && r.canDecide);
 
   function toggle(id: string) {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setSelected(next);
+  }
+
+  async function approveSelected() {
+    const ids = toApprove.map((r) => r.id);
+    if (!confirm(`Aprovar ${ids.length} pedido(s) de licença?`)) return;
+    setApproving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/licenses/approve-many", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao aprovar pedidos");
+      const failed: { name: string; error: string }[] = data.failed ?? [];
+      setNotice(
+        `${data.approved} aprovado(s)` +
+          (failed.length ? `; ${failed.length} por aprovar: ${failed.map((f) => `${f.name} (${f.error})`).join("; ")}` : "")
+      );
+      setSelected(new Set());
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setApproving(false);
+    }
   }
 
   async function deleteSelected() {
@@ -60,16 +97,28 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
 
   return (
     <div>
-      {canDelete && selected.size > 0 && (
-        <div className="mb-2 flex items-center gap-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm">
+      {notice && <p className="mb-2 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">{notice}</p>}
+      {showSelect && selected.size > 0 && (
+        <div className="mb-2 flex flex-wrap items-center gap-3 rounded-md border bg-gray-50 px-3 py-2 text-sm">
           <span>{selected.size} selecionado(s)</span>
-          <button
-            onClick={deleteSelected}
-            disabled={deleting}
-            className="rounded-md bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-60"
-          >
-            {deleting ? "A apagar..." : "Apagar selecionados"}
-          </button>
+          {toApprove.length > 0 && (
+            <button
+              onClick={approveSelected}
+              disabled={approving || deleting}
+              className="rounded-md bg-green-600 px-3 py-1 font-medium text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              {approving ? "A aprovar..." : `Aprovar ${toApprove.length === selected.size ? "selecionados" : `${toApprove.length} aprováveis`}`}
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={deleteSelected}
+              disabled={deleting || approving}
+              className="rounded-md bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              {deleting ? "A apagar..." : "Apagar selecionados"}
+            </button>
+          )}
           <button onClick={() => setSelected(new Set())} className="text-gray-600 hover:underline">
             Cancelar
           </button>
@@ -80,13 +129,13 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
         <table className="w-full text-sm">
           <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
             <tr>
-              {canDelete && (
+              {showSelect && (
                 <th className="w-8 px-3 py-2">
                   <input
                     type="checkbox"
                     aria-label="Selecionar todos"
                     checked={allSelected}
-                    onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)))}
+                    onChange={() => setSelected(allSelected ? new Set() : new Set(selectable.map((r) => r.id)))}
                   />
                 </th>
               )}
@@ -100,15 +149,17 @@ export default function LicenseTable({ rows, canDelete }: { rows: LicenseRow[]; 
           </thead>
           <tbody className="divide-y">
             {rows.map((r) => (
-              <tr key={r.id} className={selected.has(r.id) ? "bg-red-50" : "hover:bg-gray-50"}>
-                {canDelete && (
+              <tr key={r.id} className={selected.has(r.id) ? "bg-brand-50" : "hover:bg-gray-50"}>
+                {showSelect && (
                   <td className="px-3 py-2">
-                    <input
-                      type="checkbox"
-                      aria-label={`Selecionar ${r.beneficiaryName}`}
-                      checked={selected.has(r.id)}
-                      onChange={() => toggle(r.id)}
-                    />
+                    {(canDelete || r.canDecide) && (
+                      <input
+                        type="checkbox"
+                        aria-label={`Selecionar ${r.beneficiaryName}`}
+                        checked={selected.has(r.id)}
+                        onChange={() => toggle(r.id)}
+                      />
+                    )}
                   </td>
                 )}
                 <td className="px-4 py-2">

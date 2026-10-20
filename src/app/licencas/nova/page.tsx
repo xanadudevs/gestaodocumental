@@ -2,10 +2,8 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getFlatUnits } from "@/lib/units";
-import { LICENSE_PRODUCTS, getDirectionUsage, withDirections } from "@/lib/licenses";
-import { COORDINATION_NAMES, ORG_CHART, configuredCoordinator, unitCodeOf, unitLabel } from "@/lib/orgChart";
-import { Level, Role } from "@/lib/enums";
+import { LICENSE_PRODUCTS } from "@/lib/licenses";
+import { loadLicenseFormData } from "@/lib/licenseFormData";
 import LicenseRequestForm from "@/components/LicenseRequestForm";
 
 // Página pública: qualquer pessoa pode pedir uma licença sem login. Só a
@@ -13,51 +11,12 @@ import LicenseRequestForm from "@/components/LicenseRequestForm";
 export default async function NewLicenseRequestPage() {
   const session = await getServerSession(authOptions);
 
-  const [units, coordinators, usage, me] = await Promise.all([
-    getFlatUnits(),
-    prisma.user.findMany({
-      where: {
-        OR: [
-          { level: { in: [Level.COORDENACAO, Level.DIRECAO] } },
-          { role: { in: [Role.ADMIN, Role.APPROVER] } },
-        ],
-      },
-      // Sem emails: a página é pública.
-      select: { id: true, name: true, level: true, unitId: true, unit: { select: { name: true } } },
-      orderBy: { name: "asc" },
-    }),
-    getDirectionUsage(prisma),
+  const [{ coordinations, coordinators, defaultCoordinator, usage }, me] = await Promise.all([
+    loadLicenseFormData(),
     session
       ? prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } })
       : null,
   ]);
-
-  // As coordenações da DANAD e a própria Direção (licenças do Diretor e da
-  // Assessoria), sem unidades antigas que ainda não tenham sido removidas.
-  const unitsWithDirection = withDirections(units).filter(
-    (u) => COORDINATION_NAMES.has(u.name) || u.name === ORG_CHART.name
-  );
-  const coordinations = unitsWithDirection.map((u) => ({
-    id: u.id,
-    label: unitLabel(u.name),
-    depth: u.depth,
-    code: unitCodeOf(u.name),
-    direction: u.direction,
-  }));
-
-  // Coordenador de cada coordenação: o definido no organigrama (se estiver
-  // nessa unidade); senão, quem tem nível Coordenação nessa unidade (na
-  // Direção, nível Direção).
-  const defaultCoordinator: Record<string, string> = {};
-  for (const unit of unitsWithDirection) {
-    const inUnit = coordinators.filter((c) => c.unitId === unit.id);
-    const named = configuredCoordinator(unit.name)?.toLowerCase();
-    const match =
-      (named && inUnit.find((c) => c.name?.toLowerCase() === named)) ||
-      inUnit.find((c) => c.level === Level.COORDENACAO) ||
-      inUnit.find((c) => c.level === Level.DIRECAO);
-    if (match) defaultCoordinator[unit.id] = match.id;
-  }
 
   return (
     <div>
@@ -84,7 +43,7 @@ export default async function NewLicenseRequestPage() {
         <LicenseRequestForm
           products={LICENSE_PRODUCTS}
           coordinations={coordinations}
-          coordinators={coordinators.map(({ unitId: _unitId, ...c }) => c)}
+          coordinators={coordinators}
           defaultCoordinator={defaultCoordinator}
           usage={usage}
           defaults={{ name: me?.name ?? "", email: me?.email ?? "" }}

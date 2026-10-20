@@ -110,6 +110,7 @@ export const LicenseAction = {
   REJECTED: "REJECTED",
   GRANTED: "GRANTED",
   REVOKED: "REVOKED",
+  EDITED: "EDITED",
   EMAIL_FAILED: "EMAIL_FAILED",
 } as const;
 export type LicenseAction = (typeof LicenseAction)[keyof typeof LicenseAction];

@@ -92,5 +92,6 @@ export const LICENSE_ACTION_LABELS: Record<string, string> = {
   REJECTED: "rejeitou o pedido",
   GRANTED: "deu o acesso",
   REVOKED: "libertou a licença",
+  EDITED: "editou o pedido",
   EMAIL_FAILED: "— falhou o envio de email",
 };

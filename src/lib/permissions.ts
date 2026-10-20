@@ -20,6 +20,13 @@ export function canManageLicenses(role: Role) {
   return role === Role.ADMIN || role === Role.SUPPORT;
 }
 
+// Editar um pedido de licença: o Admin e o Gestor de Licenças em qualquer
+// estado; o coordenador indicado, enquanto o pedido está por decidir.
+export function canEditLicense(role: Role, status: string, coordinatorId: string, userId: string) {
+  if (canManageLicenses(role)) return true;
+  return status === "PENDING" && coordinatorId === userId;
+}
+
 export function canDecideOnLicense(role: Role, coordinatorId: string, userId: string) {
   return role === Role.ADMIN || coordinatorId === userId;
 }
