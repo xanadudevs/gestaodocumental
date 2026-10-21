@@ -79,6 +79,11 @@ export async function POST(req: NextRequest) {
     const receivedAt = str("receivedAt") ? new Date(str("receivedAt")) : new Date();
     if (Number.isNaN(receivedAt.getTime())) return NextResponse.json({ error: "Data inválida" }, { status: 400 });
 
+    const dueDate = str("dueDate") ? new Date(str("dueDate")) : null;
+    if (dueDate && Number.isNaN(dueDate.getTime())) {
+      return NextResponse.json({ error: "Prazo inválido" }, { status: 400 });
+    }
+
     const reference = await nextReference(prisma, direction, receivedAt);
     created = await prisma.document.create({
       data: {
@@ -98,6 +103,7 @@ export async function POST(req: NextRequest) {
           .filter(Boolean)
           .slice(0, 5),
         receivedAt,
+        dueDate,
         unitId: direction.id,
         uploadedById: session.user.id,
         holderId: holder.id,

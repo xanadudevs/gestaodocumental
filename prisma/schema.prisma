@@ -89,6 +89,8 @@ model Document {
   externalRef String?
   receivedAt  DateTime?
   sentAt      DateTime?
+  // Prazo para tratar o documento (sugerido pela IA ou indicado ao registar)
+  dueDate     DateTime?
 
   // Unidade dona da numeração (entradas: a Direção; saídas: quem emite)
   unit   Unit?   @relation("DocumentUnit", fields: [unitId], references: [id])
@@ -135,6 +137,7 @@ model Document {
   @@index([uploadedById])
   @@index([flow, type])
   @@index([reference])
+  @@index([dueDate])
 }
 
 model DocumentAttachment {

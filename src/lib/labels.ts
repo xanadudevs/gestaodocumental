@@ -93,3 +93,13 @@ export const LICENSE_ACTION_LABELS: Record<string, string> = {
   REVOKED: "libertou a licença",
   EMAIL_FAILED: "— falhou o envio de email",
 };
+
+export function formatDay(date: string | Date) {
+  return new Date(date).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// Dias inteiros até ao prazo (negativo = atrasado), contados por dia de calendário.
+export function daysUntil(date: Date, now = new Date()) {
+  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((day(date) - day(now)) / 86_400_000);
+}
